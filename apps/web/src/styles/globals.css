@@ -1,0 +1,121 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-background: #0e0d12;
+  --color-surface-1: #1a1823;
+  --color-surface-2: #262433;
+  --color-surface-3: #343247;
+
+  --color-foreground: #f8f6fc;
+  --color-muted: #c9c4d8;
+  --color-subtle: #6f6983;
+
+  --color-accent: #a38cf0;
+  --color-accent-hover: #b5a0f8;
+  --color-accent-active: #8b72dc;
+  --color-accent-muted: #d0c2fa;
+  --color-accent-subtle: rgb(163 140 240 / 0.32);
+
+  --color-border: #403d56;
+  --color-border-subtle: #2f2c42;
+
+  --color-status-neutral: #5c5870;
+  --color-status-warning: #e09a2c;
+  --color-status-info: #d97a9a;
+  --color-status-success: #3dba6a;
+
+  --color-danger: #e85d5d;
+  --color-danger-subtle: rgb(232 93 93 / 0.12);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --sidebar-width: 272px;
+  --sidebar-collapsed-width: 72px;
+  --topbar-height: 56px;
+  --panel-width: 272px;
+
+  --scrollbar-thumb: rgb(163 140 240 / 0.58);
+  --scrollbar-thumb-hover: rgb(181 160 248 / 0.82);
+  --scrollbar-track: transparent;
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-border);
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar {
+    width: 7px;
+    height: 7px;
+  }
+
+  *::-webkit-scrollbar-track {
+    margin: 6px 0;
+    background: var(--scrollbar-track);
+  }
+
+  *::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 999px;
+    background: var(--scrollbar-thumb);
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+    background-clip: padding-box;
+  }
+
+  *::-webkit-scrollbar-corner {
+    background: transparent;
+  }
+
+  html {
+    @apply h-full overflow-hidden antialiased;
+  }
+
+  body {
+    @apply h-full overflow-hidden bg-background font-sans text-foreground;
+  }
+
+  #root {
+    @apply h-full overflow-hidden;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-muted);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .content-panel {
+    @apply rounded-lg border border-border bg-surface-2 shadow-[inset_0_1px_0_rgb(255_255_255/0.05)];
+  }
+
+  .content-panel-header {
+    @apply flex items-center justify-between border-b border-border px-4 py-3;
+  }
+
+  .scroll-smooth-touch {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-smooth-touch {
+      scroll-behavior: auto;
+    }
+  }
+}

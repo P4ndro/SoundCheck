@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+build/
+.vite/
+
+# Environment (never commit secrets)
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE / editor
+.vscode/
+!.vscode/extensions.json
+.idea/
+.cursor/
+
+# Local overrides
+*.local
+
+# TypeScript
+*.tsbuildinfo
+
+# Prisma (later)
+prisma/*.db
+prisma/*.db-journal
