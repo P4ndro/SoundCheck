@@ -5,6 +5,12 @@ import {
 import { createId } from "@/lib/create-id";
 import { runWorkspaceMutation } from "@/lib/workspace-mutation";
 import { initialWorkspace } from "@/mocks/data";
+import { useSession } from "@/hooks/useSession";
+import {
+  createSongRequest,
+  fetchWorkspace,
+  updateSongRequest,
+} from "@/services/api-client";
 import type {
   BandEvent,
   BandWorkspace,
@@ -12,15 +18,61 @@ import type {
   Setlist,
   Song,
 } from "@/types";
+import { useAuth } from "@clerk/clerk-react";
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
 
 export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
+  const { isSignedIn, getToken } = useAuth();
+  const { session } = useSession();
   const [workspace, setWorkspace] = useState<BandWorkspace>(initialWorkspace);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadWorkspace = useCallback(async () => {
+    if (
+      !isSignedIn ||
+      !session ||
+      session.onboarding.nextStep !== "complete"
+    ) {
+      setWorkspace(initialWorkspace);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
+    const bandId = session.bands[0]?.id;
+    if (!bandId) {
+      setError("No band found for this account");
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const data = await fetchWorkspace(bandId, getToken);
+      setWorkspace(data);
+    } catch (loadError) {
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : "Failed to load workspace";
+      setError(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [getToken, isSignedIn, session]);
+
+  useEffect(() => {
+    void loadWorkspace();
+  }, [loadWorkspace]);
 
   const getSong = useCallback(
     (id: string) => workspace.songs.find((song) => song.id === id),
@@ -131,22 +183,58 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
   const addSong = useCallback(
     (
       data: Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">,
-    ): Song =>
-      runWorkspaceMutation(setWorkspace, (prev) => {
-        const now = new Date().toISOString();
-        const song: Song = {
-          ...data,
-          id: createId("song"),
-          bandId: prev.band.id,
-          createdAt: now,
-          updatedAt: now,
-        };
-        return {
-          workspace: { ...prev, songs: [...prev.songs, song] },
-          result: song,
-        };
-      }),
-    [],
+    ): Song => {
+      if (!isSignedIn) {
+        return runWorkspaceMutation(setWorkspace, (prev) => {
+          const now = new Date().toISOString();
+          const song: Song = {
+            ...data,
+            id: createId("song"),
+            bandId: prev.band.id,
+            createdAt: now,
+            updatedAt: now,
+          };
+          return {
+            workspace: { ...prev, songs: [...prev.songs, song] },
+            result: song,
+          };
+        });
+      }
+
+      const now = new Date().toISOString();
+      const optimisticId = createId("song");
+      const optimistic: Song = {
+        ...data,
+        id: optimisticId,
+        bandId: workspace.band.id,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      setWorkspace((prev) => ({
+        ...prev,
+        songs: [...prev.songs, optimistic],
+      }));
+
+      void createSongRequest(workspace.band.id, data, getToken)
+        .then(({ song }) => {
+          setWorkspace((prev) => ({
+            ...prev,
+            songs: prev.songs.map((item) =>
+              item.id === optimisticId ? song : item,
+            ),
+          }));
+        })
+        .catch(() => {
+          setWorkspace((prev) => ({
+            ...prev,
+            songs: prev.songs.filter((item) => item.id !== optimisticId),
+          }));
+        });
+
+      return optimistic;
+    },
+    [getToken, isSignedIn, workspace.band.id],
   );
 
   const updateSong = useCallback(
@@ -164,8 +252,23 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
             : song,
         ),
       }));
+
+      if (isSignedIn) {
+        void updateSongRequest(workspace.band.id, songId, patch, getToken)
+          .then(({ song }) => {
+            setWorkspace((prev) => ({
+              ...prev,
+              songs: prev.songs.map((item) =>
+                item.id === songId ? song : item,
+              ),
+            }));
+          })
+          .catch(() => {
+            void loadWorkspace();
+          });
+      }
     },
-    [],
+    [getToken, isSignedIn, loadWorkspace, workspace.band.id],
   );
 
   const createSetlist = useCallback(
@@ -243,6 +346,9 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
   const value = useMemo<BandWorkspaceContextValue>(
     () => ({
       ...workspace,
+      isLoading,
+      error,
+      reloadWorkspace: loadWorkspace,
       getSong,
       getSetlist,
       getEvent,
@@ -260,6 +366,8 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
     }),
     [
       workspace,
+      isLoading,
+      error,
       getSong,
       getSetlist,
       getEvent,
@@ -274,6 +382,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       createSetlist,
       addEvent,
       sendChatMessage,
+      loadWorkspace,
     ],
   );
 

@@ -5,9 +5,10 @@ import { useBandWorkspace } from "@/hooks/useBandWorkspace";
 import { cn } from "@/lib/cn";
 import { primaryNav, settingsNav } from "@/lib/navigation";
 import { useToast } from "@/providers/ToastProvider";
+import { useClerk } from "@clerk/clerk-react";
 import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 export interface SidebarNavProps {
   collapsed: boolean;
@@ -31,11 +32,15 @@ const navIconClass = "h-5 w-5 shrink-0";
 export function SidebarNav({ collapsed, onToggleCollapse }: SidebarNavProps) {
   const { band, currentUser } = useBandWorkspace();
   const { toast } = useToast();
+  const { signOut } = useClerk();
+  const navigate = useNavigate();
   const [signOutOpen, setSignOutOpen] = useState(false);
 
-  const handleSignOut = () => {
+  const handleSignOut = async () => {
     setSignOutOpen(false);
-    toast("Signed out — auth connects in a later phase", "info");
+    await signOut();
+    toast("Signed out", "info");
+    navigate("/login");
   };
 
   return (
@@ -120,7 +125,7 @@ export function SidebarNav({ collapsed, onToggleCollapse }: SidebarNavProps) {
         open={signOutOpen}
         onClose={() => setSignOutOpen(false)}
         title="Sign out?"
-        description="You'll return to the sign-in screen once authentication is connected."
+        description="You'll return to the log-in screen."
         footer={
           <>
             <Button variant="ghost" onClick={() => setSignOutOpen(false)}>

@@ -26,6 +26,16 @@ export interface User {
   name: string;
   email: string;
   avatarUrl?: string;
+  primaryRole?: BandRole;
+  customRoleLabel?: string;
+}
+
+export type OnboardingStep = "profile" | "band" | "complete";
+
+export interface OnboardingState {
+  profileComplete: boolean;
+  hasBand: boolean;
+  nextStep: OnboardingStep;
 }
 
 export interface Band {

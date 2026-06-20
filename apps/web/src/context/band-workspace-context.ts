@@ -8,6 +8,9 @@ import type {
 import { createContext } from "react";
 
 export interface BandWorkspaceContextValue extends BandWorkspace {
+  isLoading: boolean;
+  error: string | null;
+  reloadWorkspace: () => Promise<void>;
   getSong: (id: string) => Song | undefined;
   getSetlist: (id: string) => Setlist | undefined;
   getEvent: (id: string) => BandEvent | undefined;

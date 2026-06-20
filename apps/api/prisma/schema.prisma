@@ -1,0 +1,210 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SongStatus {
+  not_started
+  in_progress
+  instrumental_ready
+  completed
+}
+
+enum BandRole {
+  bass
+  drums
+  vocals
+  lead_guitar
+  rhythm_guitar
+  custom
+}
+
+enum Instrument {
+  bass
+  drums
+  vocals
+  lead_guitar
+  rhythm_guitar
+}
+
+enum EventType {
+  rehearsal
+  gig
+  meeting
+}
+
+enum ChatMessageType {
+  text
+  image
+}
+
+model User {
+  id                 String    @id
+  clerkId            String?   @unique
+  email              String    @unique
+  name               String
+  avatarUrl          String?
+  primaryRole        BandRole?
+  customRoleLabel    String?
+  profileCompletedAt DateTime?
+  deletedAt          DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  memberships   BandMember[]
+  chatMessages  ChatMessage[]
+  createdInvites BandInvite[] @relation("InviteCreator")
+}
+
+model Band {
+  id        String   @id
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members      BandMember[]
+  songs        Song[]
+  tabs         InstrumentTab[]
+  setlists     Setlist[]
+  events       BandEvent[]
+  chatMessages ChatMessage[]
+  invites      BandInvite[]
+}
+
+model BandInvite {
+  id        String    @id
+  bandId    String
+  code      String    @unique
+  createdBy String
+  expiresAt DateTime?
+  maxUses   Int?
+  useCount  Int       @default(0)
+  createdAt DateTime  @default(now())
+
+  band    Band @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  creator User @relation("InviteCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  @@index([bandId])
+}
+
+model BandMember {
+  id              String   @id
+  userId          String
+  bandId          String
+  role            BandRole
+  customRoleLabel String?
+  joinedAt        DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  band Band @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, bandId])
+  @@index([bandId])
+}
+
+model Song {
+  id              String     @id
+  bandId          String
+  title           String
+  bpm             Int?
+  timeSignature   String     @default("4/4")
+  durationSeconds Int        @default(0)
+  status          SongStatus @default(not_started)
+  key             String     @default("")
+  tuning          String     @default("")
+  lyrics          String     @default("") @db.Text
+  notes           String     @default("") @db.Text
+  createdAt       DateTime
+  updatedAt       DateTime
+
+  band         Band            @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  tabs         InstrumentTab[]
+  setlistItems SetlistItem[]
+
+  @@index([bandId])
+  @@index([bandId, status])
+}
+
+model InstrumentTab {
+  id         String     @id
+  songId     String
+  bandId     String
+  instrument Instrument
+  asciiTab   String     @default("") @db.Text
+  chordChart String     @default("") @db.Text
+  capo       Int?
+  trackName  String?
+
+  song Song @relation(fields: [songId], references: [id], onDelete: Cascade)
+  band Band @relation(fields: [bandId], references: [id], onDelete: Cascade)
+
+  @@index([songId])
+  @@index([bandId, instrument])
+}
+
+model Setlist {
+  id          String   @id
+  bandId      String
+  name        String
+  description String   @default("")
+  createdAt   DateTime
+  updatedAt   DateTime
+
+  band   Band          @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  items  SetlistItem[]
+  events BandEvent[]
+
+  @@index([bandId])
+}
+
+model SetlistItem {
+  id        String @id
+  setlistId String
+  songId    String
+  position  Int
+
+  setlist Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  song    Song    @relation(fields: [songId], references: [id], onDelete: Cascade)
+
+  @@unique([setlistId, songId])
+  @@unique([setlistId, position])
+  @@index([setlistId])
+}
+
+model BandEvent {
+  id        String    @id
+  bandId    String
+  title     String
+  type      EventType
+  start     DateTime
+  end       DateTime
+  location  String    @default("")
+  notes     String    @default("") @db.Text
+  setlistId String?
+
+  band    Band     @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  setlist Setlist? @relation(fields: [setlistId], references: [id], onDelete: SetNull)
+
+  @@index([bandId])
+  @@index([bandId, start])
+}
+
+model ChatMessage {
+  id           String          @id
+  bandId       String
+  senderId     String
+  type         ChatMessageType
+  text         String?         @db.Text
+  imageUrl     String?
+  imageCaption String?
+  createdAt    DateTime
+
+  band   Band @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  sender User @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([bandId, createdAt])
+}

@@ -42,13 +42,15 @@ Work incrementally. Each phase ends with something demoable.
 
 ## Phase 3 — Backend + auth
 
-| # | Task |
-|---|------|
-| 3.1 | Prisma schema + PostgreSQL |
-| 3.2 | Express API with Zod validation |
-| 3.3 | Clerk integration |
-| 3.4 | Connect songs feature end-to-end |
-| 3.5 | Remaining features one at a time |
+| # | Task | Status |
+|---|------|--------|
+| 3.1 | Prisma schema + PostgreSQL | ✅ |
+| 3.2 | Express API with Zod validation | ✅ |
+| 3.3 | Clerk integration (SignIn/SignUp + JWT middleware) | ✅ |
+| 3.4 | Onboarding (profile → create/join band) | ✅ |
+| 3.5 | Clerk → Neon webhook (`/api/webhooks/clerk`, svix, soft delete) | ✅ |
+| 3.6 | Connect songs feature end-to-end | ✅ |
+| 3.7 | Remaining features one at a time (setlists, calendar, chat…) | 🟡 |
 
 ---
 
