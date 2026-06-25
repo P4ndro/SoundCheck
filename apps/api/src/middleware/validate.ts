@@ -4,6 +4,14 @@ import type { ZodSchema } from "zod";
 
 type RequestTarget = "body" | "params" | "query";
 
+declare global {
+  namespace Express {
+    interface Request {
+      validatedQuery?: unknown;
+    }
+  }
+}
+
 export function validate<T>(
   schema: ZodSchema<T>,
   target: RequestTarget = "body",
@@ -19,7 +27,12 @@ export function validate<T>(
       return;
     }
 
-    req[target] = result.data as never;
+    if (target === "query") {
+      req.validatedQuery = result.data;
+    } else {
+      req[target] = result.data as never;
+    }
+
     next();
   };
 }

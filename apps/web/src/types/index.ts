@@ -24,7 +24,8 @@ export type EventType = "rehearsal" | "gig" | "meeting";
 export interface User {
   id: string;
   name: string;
-  email: string;
+  /** Present for the signed-in user only. */
+  email?: string;
   avatarUrl?: string;
   primaryRole?: BandRole;
   customRoleLabel?: string;
@@ -51,6 +52,21 @@ export interface BandMember {
   role: BandRole;
   customRoleLabel?: string;
   joinedAt: string;
+  user?: User;
+}
+
+export interface MemberPart {
+  tabId: string;
+  songId: string;
+  songTitle: string;
+  instrument: Instrument;
+}
+
+export interface MemberProfile {
+  member: BandMember;
+  user: User;
+  isSelf: boolean;
+  parts: MemberPart[];
 }
 
 export interface Song {
@@ -128,5 +144,4 @@ export interface BandWorkspace {
   tabs: InstrumentTab[];
   setlists: Setlist[];
   events: BandEvent[];
-  chatMessages: ChatMessage[];
 }

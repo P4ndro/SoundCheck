@@ -12,6 +12,7 @@ import {
 import { BandOnboardingPage } from "@/features/onboarding/pages/BandOnboardingPage";
 import { ProfileOnboardingPage } from "@/features/onboarding/pages/ProfileOnboardingPage";
 import { SettingsPage } from "@/features/band/pages/SettingsPage";
+import { MemberProfilePage } from "@/features/band/pages/MemberProfilePage";
 import { CalendarPage } from "@/features/calendar/pages/CalendarPage";
 import { SetlistDetailPage } from "@/features/setlists/pages/SetlistDetailPage";
 import { SetlistsPage } from "@/features/setlists/pages/SetlistsPage";
@@ -80,6 +81,7 @@ export const router = createBrowserRouter([
           { path: "tabs", element: <TabsPage /> },
           { path: "chat", element: <ChatPage /> },
           { path: "settings", element: <SettingsPage /> },
+          { path: "settings/members/:userId", element: <MemberProfilePage /> },
         ],
       },
     ],

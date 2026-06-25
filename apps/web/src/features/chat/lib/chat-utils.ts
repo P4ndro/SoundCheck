@@ -87,6 +87,15 @@ export function shouldShowSenderHeader(
   return gap > CLUSTER_GAP_MS;
 }
 
+/** Extra vertical gap before a message that starts a new cluster. */
+export function shouldAddClusterGap(
+  messages: ChatMessage[],
+  index: number,
+): boolean {
+  if (index === 0) return false;
+  return shouldShowSenderHeader(messages, index);
+}
+
 export function isLastInCluster(
   messages: ChatMessage[],
   index: number,
@@ -105,4 +114,13 @@ export function isLastInCluster(
 export function memberSummary(names: string[]): string {
   if (names.length <= 3) return names.join(", ");
   return `${names.slice(0, 2).join(", ")} +${names.length - 2}`;
+}
+
+const NEAR_BOTTOM_THRESHOLD_PX = 120;
+
+export function isScrollNearBottom(element: HTMLElement): boolean {
+  return (
+    element.scrollHeight - element.scrollTop - element.clientHeight <
+    NEAR_BOTTOM_THRESHOLD_PX
+  );
 }

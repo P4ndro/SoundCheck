@@ -125,10 +125,15 @@ export function SetlistsPage() {
         open={createOpen}
         onClose={() => setCreateOpen(false)}
         onSubmit={(data) => {
-          const setlist = createSetlist(data);
           setCreateOpen(false);
-          toast(`"${setlist.name}" created`);
-          navigate(`/setlists/${setlist.id}`);
+          void Promise.resolve(createSetlist(data))
+            .then((setlist) => {
+              toast(`"${setlist.name}" created`);
+              navigate(`/setlists/${setlist.id}`);
+            })
+            .catch(() => {
+              toast("Could not create setlist");
+            });
         }}
       />
     </div>

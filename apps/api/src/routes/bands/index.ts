@@ -7,6 +7,10 @@ import { requireBandMember } from "../../middleware/band-member.js";
 import { validate } from "../../middleware/validate.js";
 import { bandIdParamsSchema } from "../../schemas/song.js";
 import { bandOnboardingRouter } from "./onboarding.js";
+import { chatRouter } from "./chat.js";
+import { eventsRouter } from "./events.js";
+import { membersRouter } from "./members.js";
+import { setlistsRouter } from "./setlists.js";
 import { songsRouter } from "./songs.js";
 import { Router } from "express";
 
@@ -38,5 +42,9 @@ bandScopedRouter.get(
 );
 
 bandScopedRouter.use("/songs", songsRouter);
+bandScopedRouter.use("/setlists", setlistsRouter);
+bandScopedRouter.use("/events", eventsRouter);
+bandScopedRouter.use("/chat", chatRouter);
+bandScopedRouter.use("/members", membersRouter);
 
 bandsRouter.use("/:bandId", bandScopedRouter);

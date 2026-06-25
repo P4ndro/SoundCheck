@@ -25,14 +25,6 @@ bandOnboardingRouter.post(
       );
     }
 
-    const existingMembership = await prisma.bandMember.findFirst({
-      where: { userId: user.id },
-    });
-
-    if (existingMembership) {
-      throw new ApiError(409, "You are already in a band");
-    }
-
     const { name } = req.body as { name: string };
     const now = new Date();
 
@@ -95,14 +87,6 @@ bandOnboardingRouter.post(
 
     if (!user.profileCompletedAt || !user.primaryRole) {
       throw new ApiError(400, "Complete your profile before joining a band");
-    }
-
-    const existingMembership = await prisma.bandMember.findFirst({
-      where: { userId: user.id },
-    });
-
-    if (existingMembership) {
-      throw new ApiError(409, "You are already in a band");
     }
 
     const code = normalizeInviteCode((req.body as { code: string }).code);

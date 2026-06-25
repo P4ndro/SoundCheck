@@ -230,13 +230,18 @@ export function CalendarPage() {
         onClose={() => setScheduleOpen(false)}
         setlists={setlists}
         onSubmit={(data) => {
-          const event = addEvent(data);
           setScheduleOpen(false);
-          toast(`"${event.title}" scheduled`);
-          const eventMonth = new Date(event.start);
-          setViewDate(
-            new Date(eventMonth.getFullYear(), eventMonth.getMonth(), 1),
-          );
+          void Promise.resolve(addEvent(data))
+            .then((event) => {
+              toast(`"${event.title}" scheduled`);
+              const eventMonth = new Date(event.start);
+              setViewDate(
+                new Date(eventMonth.getFullYear(), eventMonth.getMonth(), 1),
+              );
+            })
+            .catch(() => {
+              toast("Could not schedule event");
+            });
         }}
       />
     </div>

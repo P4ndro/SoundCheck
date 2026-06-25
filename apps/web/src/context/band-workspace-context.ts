@@ -1,7 +1,6 @@
 import type {
   BandEvent,
   BandWorkspace,
-  ChatMessage,
   Setlist,
   Song,
 } from "@/types";
@@ -29,13 +28,8 @@ export interface BandWorkspaceContextValue extends BandWorkspace {
   ) => void;
   createSetlist: (
     data: Omit<Setlist, "id" | "bandId" | "songIds" | "createdAt" | "updatedAt">,
-  ) => Setlist;
-  addEvent: (event: Omit<BandEvent, "id" | "bandId">) => BandEvent;
-  sendChatMessage: (payload: {
-    text?: string;
-    imageUrl?: string;
-    imageCaption?: string;
-  }) => ChatMessage;
+  ) => Setlist | Promise<Setlist>;
+  addEvent: (event: Omit<BandEvent, "id" | "bandId">) => BandEvent | Promise<BandEvent>;
 }
 
 export const BandWorkspaceContext =

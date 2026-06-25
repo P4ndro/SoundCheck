@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/Button";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { useSession } from "@/hooks/useSession";
+import { useActiveBand } from "@/hooks/useActiveBand";
 import { cn } from "@/lib/cn";
 import {
   createBandRequest,
@@ -19,6 +20,7 @@ export function BandOnboardingPage() {
   const navigate = useNavigate();
   const { getToken } = useAuth();
   const { refreshSession } = useSession();
+  const { setActiveBandId } = useActiveBand();
   const { toast } = useToast();
   const [mode, setMode] = useState<BandMode>("create");
   const [bandName, setBandName] = useState("");
@@ -38,11 +40,12 @@ export function BandOnboardingPage() {
     setSubmitting(true);
 
     try {
-      const { inviteCode: createdCode } = await createBandRequest(
+      const { band, inviteCode: createdCode } = await createBandRequest(
         bandName.trim(),
         getToken,
       );
       await refreshSession();
+      setActiveBandId(band.id);
       toast(`Band created. Share invite code ${createdCode}`, "info");
       navigate("/songs", { replace: true });
     } catch (submitError) {
@@ -68,8 +71,9 @@ export function BandOnboardingPage() {
     setSubmitting(true);
 
     try {
-      await joinBandRequest(inviteCode.trim(), getToken);
+      const { band } = await joinBandRequest(inviteCode.trim(), getToken);
       await refreshSession();
+      setActiveBandId(band.id);
       navigate("/songs", { replace: true });
     } catch (submitError) {
       setError(

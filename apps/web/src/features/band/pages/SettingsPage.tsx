@@ -3,18 +3,24 @@ import { Button } from "@/components/ui/Button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { DataTable } from "@/components/ui/DataTable";
 import { Input } from "@/components/ui/Input";
+import { CreateBandModal } from "@/features/band/components/CreateBandModal";
 import { InviteMemberModal } from "@/features/band/components/InviteMemberModal";
+import { JoinBandModal } from "@/features/band/components/JoinBandModal";
 import { formatDate } from "@/lib/format";
 import { getMemberLabel } from "@/lib/roles";
 import { useBandWorkspace } from "@/hooks/useBandWorkspace";
 import type { BandMember } from "@/types";
-import { UserPlus } from "lucide-react";
+import { Plus, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function SettingsPage() {
   const { band, members, users, updateBandName } = useBandWorkspace();
+  const navigate = useNavigate();
   const [bandName, setBandName] = useState(band.name);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [createBandOpen, setCreateBandOpen] = useState(false);
+  const [joinBandOpen, setJoinBandOpen] = useState(false);
 
   const columns = useMemo(
     () => [
@@ -48,10 +54,20 @@ export function SettingsPage() {
       <PageHeader
         description="Manage your band, members, and instrument edit permissions."
         actions={
-          <Button onClick={() => setInviteOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-            Invite member
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="secondary" onClick={() => setCreateBandOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New band
+            </Button>
+            <Button variant="secondary" onClick={() => setJoinBandOpen(true)}>
+              <Users className="h-4 w-4" />
+              Join band
+            </Button>
+            <Button onClick={() => setInviteOpen(true)}>
+              <UserPlus className="h-4 w-4" />
+              Invite member
+            </Button>
+          </div>
         }
       />
 
@@ -97,6 +113,9 @@ export function SettingsPage() {
               columns={columns}
               data={members}
               keyExtractor={(member) => member.id}
+              onRowClick={(member) =>
+                navigate(`/settings/members/${member.userId}`)
+              }
             />
           </div>
         </section>
@@ -121,6 +140,14 @@ export function SettingsPage() {
       <InviteMemberModal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
+      />
+      <CreateBandModal
+        open={createBandOpen}
+        onClose={() => setCreateBandOpen(false)}
+      />
+      <JoinBandModal
+        open={joinBandOpen}
+        onClose={() => setJoinBandOpen(false)}
       />
     </div>
   );

@@ -1,6 +1,8 @@
 import { env } from "@/lib/env";
 import { clerkProviderAppearance } from "@/lib/clerk-appearance";
+import { ActiveBandProvider } from "@/providers/ActiveBandProvider";
 import { BandWorkspaceProvider } from "@/providers/BandWorkspaceProvider";
+import { QueryProvider } from "@/providers/QueryProvider";
 import { SessionProvider } from "@/providers/SessionProvider";
 import { ToastProvider } from "@/providers/ToastProvider";
 import { ClerkProvider } from "@clerk/clerk-react";
@@ -17,13 +19,17 @@ export function App() {
       signInFallbackRedirectUrl="/onboarding"
       signUpFallbackRedirectUrl="/onboarding"
     >
-      <SessionProvider>
-        <BandWorkspaceProvider>
-          <ToastProvider>
-            <RouterProvider router={router} />
-          </ToastProvider>
-        </BandWorkspaceProvider>
-      </SessionProvider>
+      <QueryProvider>
+        <SessionProvider>
+          <ActiveBandProvider>
+            <BandWorkspaceProvider>
+              <ToastProvider>
+                <RouterProvider router={router} />
+              </ToastProvider>
+            </BandWorkspaceProvider>
+          </ActiveBandProvider>
+        </SessionProvider>
+      </QueryProvider>
     </ClerkProvider>
   );
 }

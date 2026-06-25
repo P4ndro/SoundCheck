@@ -2,77 +2,85 @@ import {
   BandWorkspaceContext,
   type BandWorkspaceContextValue,
 } from "@/context/band-workspace-context";
-import { createId } from "@/lib/create-id";
-import { runWorkspaceMutation } from "@/lib/workspace-mutation";
-import { initialWorkspace } from "@/mocks/data";
+import { useActiveBand } from "@/hooks/useActiveBand";
 import { useSession } from "@/hooks/useSession";
+import { useWorkspaceQuery } from "@/hooks/useWorkspaceQuery";
+import { createId } from "@/lib/create-id";
+import { queryKeys } from "@/lib/query-keys";
+import { initialWorkspace } from "@/mocks/data";
 import {
+  runWorkspaceMutation,
+  type PatchWorkspace,
+} from "@/lib/workspace-mutation";
+import {
+  addSongToSetlistRequest,
+  createEventRequest,
+  createSetlistRequest,
   createSongRequest,
-  fetchWorkspace,
+  deleteSetlistRequest,
+  duplicateSetlistRequest,
+  removeSongFromSetlistRequest,
+  reorderSetlistRequest,
   updateSongRequest,
 } from "@/services/api-client";
 import type {
   BandEvent,
   BandWorkspace,
-  ChatMessage,
   Setlist,
   Song,
 } from "@/types";
 import { useAuth } from "@clerk/clerk-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, type ReactNode } from "react";
 
 export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
   const { isSignedIn, getToken } = useAuth();
   const { session } = useSession();
-  const [workspace, setWorkspace] = useState<BandWorkspace>(initialWorkspace);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { activeBand } = useActiveBand();
+  const queryClient = useQueryClient();
+  const bandId = activeBand?.id;
 
-  const loadWorkspace = useCallback(async () => {
-    if (
-      !isSignedIn ||
-      !session ||
-      session.onboarding.nextStep !== "complete"
-    ) {
-      setWorkspace(initialWorkspace);
-      setError(null);
-      setIsLoading(false);
-      return;
-    }
+  const workspaceQuery = useWorkspaceQuery(bandId);
+  const workspace = workspaceQuery.data ?? initialWorkspace;
 
-    const bandId = session.bands[0]?.id;
-    if (!bandId) {
-      setError("No band found for this account");
-      setIsLoading(false);
-      return;
-    }
+  const isWorkspaceStale = Boolean(
+    bandId && workspaceQuery.data && workspaceQuery.data.band.id !== bandId,
+  );
 
-    setIsLoading(true);
-    setError(null);
+  const noBand =
+    Boolean(isSignedIn) &&
+    session?.onboarding.nextStep === "complete" &&
+    !bandId;
 
-    try {
-      const data = await fetchWorkspace(bandId, getToken);
-      setWorkspace(data);
-    } catch (loadError) {
-      const message =
-        loadError instanceof Error
-          ? loadError.message
-          : "Failed to load workspace";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getToken, isSignedIn, session]);
+  const isLoading =
+    isWorkspaceStale ||
+    (workspaceQuery.isPending && workspaceQuery.data === undefined);
 
-  useEffect(() => {
-    void loadWorkspace();
-  }, [loadWorkspace]);
+  const error = noBand
+    ? "No band found for this account"
+    : workspaceQuery.error instanceof Error
+      ? workspaceQuery.error.message
+      : workspaceQuery.error
+        ? "Failed to load workspace"
+        : null;
+
+  const patchWorkspace = useCallback<PatchWorkspace>(
+    (updater) => {
+      if (!bandId) return;
+      queryClient.setQueryData<BandWorkspace>(
+        queryKeys.workspace(bandId),
+        (old) => updater(old ?? initialWorkspace),
+      );
+    },
+    [bandId, queryClient],
+  );
+
+  const reloadWorkspace = useCallback(async () => {
+    if (!bandId) return;
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.workspace(bandId),
+    });
+  }, [bandId, queryClient]);
 
   const getSong = useCallback(
     (id: string) => workspace.songs.find((song) => song.id === id),
@@ -89,65 +97,133 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
     [workspace.events],
   );
 
-  const updateBandName = useCallback((name: string) => {
-    setWorkspace((prev) => ({
-      ...prev,
-      band: { ...prev.band, name },
-    }));
-  }, []);
+  const updateBandName = useCallback(
+    (name: string) => {
+      patchWorkspace((prev) => ({
+        ...prev,
+        band: { ...prev.band, name },
+      }));
+    },
+    [patchWorkspace],
+  );
+
+  const workspaceBandId = workspace.band.id;
+
+  const replaceSetlist = useCallback(
+    (setlist: Setlist) => {
+      patchWorkspace((prev) => ({
+        ...prev,
+        setlists: prev.setlists.map((item) =>
+          item.id === setlist.id ? setlist : item,
+        ),
+      }));
+    },
+    [patchWorkspace],
+  );
 
   const reorderSetlistSongs = useCallback(
     (setlistId: string, fromIndex: number, toIndex: number) => {
       if (fromIndex === toIndex) return;
 
-      setWorkspace((prev) => ({
+      const current = workspace.setlists.find(
+        (setlist) => setlist.id === setlistId,
+      );
+      if (!current) return;
+
+      const songIds = [...current.songIds];
+      const [moved] = songIds.splice(fromIndex, 1);
+      if (!moved) return;
+      songIds.splice(toIndex, 0, moved);
+
+      patchWorkspace((prev) => ({
         ...prev,
-        setlists: prev.setlists.map((setlist) => {
-          if (setlist.id !== setlistId) return setlist;
-
-          const songIds = [...setlist.songIds];
-          const [moved] = songIds.splice(fromIndex, 1);
-          if (!moved) return setlist;
-          songIds.splice(toIndex, 0, moved);
-
-          return {
-            ...setlist,
-            songIds,
-            updatedAt: new Date().toISOString(),
-          };
-        }),
+        setlists: prev.setlists.map((setlist) =>
+          setlist.id === setlistId
+            ? {
+                ...setlist,
+                songIds,
+                updatedAt: new Date().toISOString(),
+              }
+            : setlist,
+        ),
       }));
+
+      if (!isSignedIn || !bandId) return;
+
+      void reorderSetlistRequest(bandId, setlistId, songIds, getToken)
+        .then(({ setlist }) => {
+          replaceSetlist(setlist);
+        })
+        .catch(() => {
+          void reloadWorkspace();
+        });
     },
-    [],
+    [
+      bandId,
+      getToken,
+      isSignedIn,
+      patchWorkspace,
+      reloadWorkspace,
+      replaceSetlist,
+      workspace.setlists,
+    ],
   );
 
-  const duplicateSetlist = useCallback((setlistId: string) => {
-    setWorkspace((prev) => {
-      const source = prev.setlists.find((s) => s.id === setlistId);
-      if (!source) return prev;
+  const duplicateSetlist = useCallback(
+    (setlistId: string) => {
+      if (!isSignedIn) {
+        patchWorkspace((prev) => {
+          const source = prev.setlists.find((s) => s.id === setlistId);
+          if (!source) return prev;
 
-      const copy: Setlist = {
-        ...source,
-        id: createId("setlist"),
-        name: `${source.name} (copy)`,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+          const copy: Setlist = {
+            ...source,
+            id: createId("setlist"),
+            name: `${source.name} (copy)`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+          };
 
-      return { ...prev, setlists: [...prev.setlists, copy] };
-    });
-  }, []);
+          return { ...prev, setlists: [...prev.setlists, copy] };
+        });
+        return;
+      }
 
-  const deleteSetlist = useCallback((setlistId: string) => {
-    setWorkspace((prev) => ({
-      ...prev,
-      setlists: prev.setlists.filter((s) => s.id !== setlistId),
-    }));
-  }, []);
+      if (!bandId) return;
+
+      void duplicateSetlistRequest(bandId, setlistId, getToken)
+        .then(({ setlist }) => {
+          patchWorkspace((prev) => ({
+            ...prev,
+            setlists: [...prev.setlists, setlist],
+          }));
+        })
+        .catch(() => {
+          void reloadWorkspace();
+        });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
+  );
+
+  const deleteSetlist = useCallback(
+    (setlistId: string) => {
+      patchWorkspace((prev) => ({
+        ...prev,
+        setlists: prev.setlists.filter((s) => s.id !== setlistId),
+      }));
+
+      if (!isSignedIn || !bandId) return;
+
+      void deleteSetlistRequest(bandId, setlistId, getToken).catch(() => {
+        void reloadWorkspace();
+      });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
+  );
 
   const removeSongFromSetlist = useCallback(
     (setlistId: string, songId: string) => {
-      setWorkspace((prev) => ({
+      patchWorkspace((prev) => ({
         ...prev,
         setlists: prev.setlists.map((setlist) => {
           if (setlist.id !== setlistId) return setlist;
@@ -158,13 +234,23 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
           };
         }),
       }));
+
+      if (!isSignedIn || !bandId) return;
+
+      void removeSongFromSetlistRequest(bandId, setlistId, songId, getToken)
+        .then(({ setlist }) => {
+          replaceSetlist(setlist);
+        })
+        .catch(() => {
+          void reloadWorkspace();
+        });
     },
-    [],
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace, replaceSetlist],
   );
 
   const addSongToSetlist = useCallback(
     (setlistId: string, songId: string) => {
-      setWorkspace((prev) => ({
+      patchWorkspace((prev) => ({
         ...prev,
         setlists: prev.setlists.map((setlist) => {
           if (setlist.id !== setlistId) return setlist;
@@ -176,8 +262,18 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
           };
         }),
       }));
+
+      if (!isSignedIn || !bandId) return;
+
+      void addSongToSetlistRequest(bandId, setlistId, songId, getToken)
+        .then(({ setlist }) => {
+          replaceSetlist(setlist);
+        })
+        .catch(() => {
+          void reloadWorkspace();
+        });
     },
-    [],
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace, replaceSetlist],
   );
 
   const addSong = useCallback(
@@ -185,7 +281,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       data: Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">,
     ): Song => {
       if (!isSignedIn) {
-        return runWorkspaceMutation(setWorkspace, (prev) => {
+        return runWorkspaceMutation(patchWorkspace, (prev) => {
           const now = new Date().toISOString();
           const song: Song = {
             ...data,
@@ -206,19 +302,21 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       const optimistic: Song = {
         ...data,
         id: optimisticId,
-        bandId: workspace.band.id,
+        bandId: workspaceBandId,
         createdAt: now,
         updatedAt: now,
       };
 
-      setWorkspace((prev) => ({
+      patchWorkspace((prev) => ({
         ...prev,
         songs: [...prev.songs, optimistic],
       }));
 
-      void createSongRequest(workspace.band.id, data, getToken)
+      if (!bandId) return optimistic;
+
+      void createSongRequest(bandId, data, getToken)
         .then(({ song }) => {
-          setWorkspace((prev) => ({
+          patchWorkspace((prev) => ({
             ...prev,
             songs: prev.songs.map((item) =>
               item.id === optimisticId ? song : item,
@@ -226,7 +324,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
           }));
         })
         .catch(() => {
-          setWorkspace((prev) => ({
+          patchWorkspace((prev) => ({
             ...prev,
             songs: prev.songs.filter((item) => item.id !== optimisticId),
           }));
@@ -234,7 +332,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
 
       return optimistic;
     },
-    [getToken, isSignedIn, workspace.band.id],
+    [bandId, getToken, isSignedIn, patchWorkspace, workspaceBandId],
   );
 
   const updateSong = useCallback(
@@ -244,7 +342,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
         Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">
       >,
     ) => {
-      setWorkspace((prev) => ({
+      patchWorkspace((prev) => ({
         ...prev,
         songs: prev.songs.map((song) =>
           song.id === songId
@@ -253,10 +351,10 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
         ),
       }));
 
-      if (isSignedIn) {
-        void updateSongRequest(workspace.band.id, songId, patch, getToken)
+      if (isSignedIn && bandId) {
+        void updateSongRequest(bandId, songId, patch, getToken)
           .then(({ song }) => {
-            setWorkspace((prev) => ({
+            patchWorkspace((prev) => ({
               ...prev,
               songs: prev.songs.map((item) =>
                 item.id === songId ? song : item,
@@ -264,11 +362,11 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
             }));
           })
           .catch(() => {
-            void loadWorkspace();
+            void reloadWorkspace();
           });
       }
     },
-    [getToken, isSignedIn, loadWorkspace, workspace.band.id],
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
   );
 
   const createSetlist = useCallback(
@@ -277,70 +375,77 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
         Setlist,
         "id" | "bandId" | "songIds" | "createdAt" | "updatedAt"
       >,
-    ): Setlist =>
-      runWorkspaceMutation(setWorkspace, (prev) => {
-        const now = new Date().toISOString();
-        const setlist: Setlist = {
-          ...data,
-          id: createId("setlist"),
-          bandId: prev.band.id,
-          songIds: [],
-          createdAt: now,
-          updatedAt: now,
-        };
-        return {
-          workspace: { ...prev, setlists: [...prev.setlists, setlist] },
-          result: setlist,
-        };
-      }),
-    [],
+    ): Setlist | Promise<Setlist> => {
+      if (!isSignedIn) {
+        return runWorkspaceMutation(patchWorkspace, (prev) => {
+          const now = new Date().toISOString();
+          const setlist: Setlist = {
+            ...data,
+            id: createId("setlist"),
+            bandId: prev.band.id,
+            songIds: [],
+            createdAt: now,
+            updatedAt: now,
+          };
+          return {
+            workspace: { ...prev, setlists: [...prev.setlists, setlist] },
+            result: setlist,
+          };
+        });
+      }
+
+      if (!bandId) {
+        return Promise.reject(new Error("No active band"));
+      }
+
+      return createSetlistRequest(bandId, data, getToken).then(({ setlist }) => {
+        patchWorkspace((prev) => ({
+          ...prev,
+          setlists: [...prev.setlists, setlist],
+        }));
+        return setlist;
+      });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace],
   );
 
   const addEvent = useCallback(
-    (event: Omit<BandEvent, "id" | "bandId">): BandEvent =>
-      runWorkspaceMutation(setWorkspace, (prev) => {
-        const newEvent: BandEvent = {
-          ...event,
-          id: createId("event"),
-          bandId: prev.band.id,
-        };
-        return {
-          workspace: { ...prev, events: [...prev.events, newEvent] },
-          result: newEvent,
-        };
-      }),
-    [],
-  );
+    (event: Omit<BandEvent, "id" | "bandId">): BandEvent | Promise<BandEvent> => {
+      if (!isSignedIn) {
+        return runWorkspaceMutation(patchWorkspace, (prev) => {
+          const newEvent: BandEvent = {
+            ...event,
+            id: createId("event"),
+            bandId: prev.band.id,
+          };
+          return {
+            workspace: {
+              ...prev,
+              events: [...prev.events, newEvent].sort(
+                (a, b) =>
+                  new Date(a.start).getTime() - new Date(b.start).getTime(),
+              ),
+            },
+            result: newEvent,
+          };
+        });
+      }
 
-  const sendChatMessage = useCallback(
-    (payload: {
-      text?: string;
-      imageUrl?: string;
-      imageCaption?: string;
-    }): ChatMessage =>
-      runWorkspaceMutation(setWorkspace, (prev) => {
-        const hasImage = Boolean(payload.imageUrl);
-        const message: ChatMessage = {
-          id: createId("msg"),
-          bandId: prev.band.id,
-          senderId: prev.currentUser.id,
-          type: hasImage ? "image" : "text",
-          text: hasImage ? undefined : payload.text?.trim(),
-          imageUrl: payload.imageUrl,
-          imageCaption: hasImage
-            ? payload.imageCaption?.trim() || payload.text?.trim()
-            : undefined,
-          createdAt: new Date().toISOString(),
-        };
-        return {
-          workspace: {
-            ...prev,
-            chatMessages: [...prev.chatMessages, message],
-          },
-          result: message,
-        };
-      }),
-    [],
+      if (!bandId) {
+        return Promise.reject(new Error("No active band"));
+      }
+
+      return createEventRequest(bandId, event, getToken).then(({ event: saved }) => {
+        patchWorkspace((prev) => ({
+          ...prev,
+          events: [...prev.events, saved].sort(
+            (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+          ),
+        }));
+        return saved;
+      });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace],
   );
 
   const value = useMemo<BandWorkspaceContextValue>(
@@ -348,7 +453,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       ...workspace,
       isLoading,
       error,
-      reloadWorkspace: loadWorkspace,
+      reloadWorkspace,
       getSong,
       getSetlist,
       getEvent,
@@ -362,12 +467,12 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       updateSong,
       createSetlist,
       addEvent,
-      sendChatMessage,
     }),
     [
       workspace,
       isLoading,
       error,
+      reloadWorkspace,
       getSong,
       getSetlist,
       getEvent,
@@ -381,8 +486,6 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       updateSong,
       createSetlist,
       addEvent,
-      sendChatMessage,
-      loadWorkspace,
     ],
   );
 

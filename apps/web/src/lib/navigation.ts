@@ -36,3 +36,16 @@ export const routeTitles: Record<string, string> = {
   "/chat": "Chat",
   "/settings": "Band Settings",
 };
+
+export function resolveRouteTitle(pathname: string): string {
+  if (routeTitles[pathname]) {
+    return routeTitles[pathname];
+  }
+
+  if (pathname.startsWith("/settings/members/")) {
+    return "Member profile";
+  }
+
+  const base = `/${pathname.split("/")[1] ?? ""}`;
+  return routeTitles[base] ?? "Soundcheck";
+}

@@ -1,49 +1,43 @@
 import type { MeResponse } from "@/services/api-client";
 import type { SessionContextValue } from "@/context/session-context";
 import { SessionContext } from "@/context/session-context";
+import { queryKeys } from "@/lib/query-keys";
 import { fetchMe } from "@/services/api-client";
 import { useAuth } from "@clerk/clerk-react";
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback, useMemo, type ReactNode } from "react";
 
 export function SessionProvider({ children }: { children: ReactNode }) {
   const { isSignedIn, getToken } = useAuth();
-  const [session, setSession] = useState<MeResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const {
+    data: session = null,
+    isPending,
+    error: queryError,
+    refetch,
+  } = useQuery({
+    queryKey: queryKeys.me,
+    queryFn: () => fetchMe(getToken),
+    enabled: isSignedIn,
+  });
+
+  const isLoading = Boolean(isPending && session === null && isSignedIn);
+  const error =
+    queryError instanceof Error
+      ? queryError.message
+      : queryError
+        ? "Failed to load session"
+        : null;
 
   const refreshSession = useCallback(async () => {
     if (!isSignedIn) {
-      setSession(null);
-      setError(null);
-      setIsLoading(false);
+      queryClient.setQueryData<MeResponse | null>(queryKeys.me, null);
       return;
     }
 
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const me = await fetchMe(getToken);
-      setSession(me);
-    } catch (loadError) {
-      const message =
-        loadError instanceof Error ? loadError.message : "Failed to load session";
-      setError(message);
-      setSession(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getToken, isSignedIn]);
-
-  useEffect(() => {
-    void refreshSession();
-  }, [refreshSession]);
+    await refetch();
+  }, [isSignedIn, queryClient, refetch]);
 
   const value = useMemo<SessionContextValue>(
     () => ({

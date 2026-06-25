@@ -3,9 +3,11 @@ import { getMemberLabel } from "@/lib/roles";
 import { getInitials } from "@/lib/user";
 import { cn } from "@/lib/cn";
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 export function UserMenu() {
   const { currentUser, members, users } = useBandWorkspace();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -54,12 +56,28 @@ export function UserMenu() {
       </button>
 
       {open && (
-        <div className="absolute top-full right-0 z-50 mt-2 w-52 rounded-lg border border-border bg-surface-2 px-3 py-2.5 shadow-xl">
-          <p className="truncate text-sm font-medium text-foreground">
-            {currentUser.name}
-          </p>
-          <p className="truncate text-xs text-subtle">{roleLabel}</p>
-          <p className="mt-1 truncate text-xs text-muted">{currentUser.email}</p>
+        <div className="absolute top-full right-0 z-50 mt-2 w-52 rounded-lg border border-border bg-surface-2 py-1 shadow-xl">
+          <div className="px-3 py-2.5">
+            <p className="truncate text-sm font-medium text-foreground">
+              {currentUser.name}
+            </p>
+            <p className="truncate text-xs text-subtle">{roleLabel}</p>
+            {currentUser.email && (
+              <p className="mt-1 truncate text-xs text-muted">
+                {currentUser.email}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate(`/settings/members/${currentUser.id}`);
+            }}
+            className="w-full px-3 py-2 text-left text-sm text-muted hover:bg-surface-1 hover:text-foreground"
+          >
+            View profile
+          </button>
         </div>
       )}
     </div>

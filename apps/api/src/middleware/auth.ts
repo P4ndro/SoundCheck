@@ -1,6 +1,6 @@
 import { requireEnv } from "../config/env.js";
 import { ApiError } from "../middleware/error-handler.js";
-import { prisma } from "../lib/prisma.js";
+import { prisma, withDbRetry } from "../lib/prisma.js";
 import { createClerkClient } from "@clerk/backend";
 import { getAuth } from "@clerk/express";
 import type { User } from "@prisma/client";
@@ -18,13 +18,7 @@ declare global {
   }
 }
 
-export async function resolveDbUser(req: Request): Promise<User> {
-  const { userId: clerkId } = getAuth(req);
-
-  if (!clerkId) {
-    throw new ApiError(401, "Authentication required");
-  }
-
+async function syncUserFromClerk(clerkId: string): Promise<User> {
   const clerkUser = await clerkClient.users.getUser(clerkId);
   const email = clerkUser.primaryEmailAddress?.emailAddress;
 
@@ -36,25 +30,6 @@ export async function resolveDbUser(req: Request): Promise<User> {
     [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ").trim() ||
     email.split("@")[0] ||
     "Band member";
-
-  const existingByClerk = await prisma.user.findUnique({
-    where: { clerkId },
-  });
-
-  if (existingByClerk) {
-    if (existingByClerk.deletedAt) {
-      throw new ApiError(401, "Account is no longer active");
-    }
-
-    return prisma.user.update({
-      where: { id: existingByClerk.id },
-      data: {
-        email,
-        name,
-        avatarUrl: clerkUser.imageUrl,
-      },
-    });
-  }
 
   const existingByEmail = await prisma.user.findUnique({
     where: { email },
@@ -84,6 +59,27 @@ export async function resolveDbUser(req: Request): Promise<User> {
       avatarUrl: clerkUser.imageUrl,
     },
   });
+}
+
+export async function resolveDbUser(req: Request): Promise<User> {
+  const { userId: clerkId } = getAuth(req);
+
+  if (!clerkId) {
+    throw new ApiError(401, "Authentication required");
+  }
+
+  const existingByClerk = await withDbRetry(() =>
+    prisma.user.findUnique({ where: { clerkId } }),
+  );
+
+  if (existingByClerk) {
+    if (existingByClerk.deletedAt) {
+      throw new ApiError(401, "Account is no longer active");
+    }
+    return existingByClerk;
+  }
+
+  return syncUserFromClerk(clerkId);
 }
 
 export function requireAuth() {

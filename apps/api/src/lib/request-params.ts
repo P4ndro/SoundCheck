@@ -12,3 +12,15 @@ export function bandIdFromRequest(req: Request): string {
 export function songIdFromRequest(req: Request): string {
   return paramString(req.params.songId);
 }
+
+export function setlistIdFromRequest(req: Request): string {
+  return paramString(req.params.setlistId);
+}
+
+export function eventIdFromRequest(req: Request): string {
+  return paramString(req.params.eventId);
+}
+
+export function userIdFromRequest(req: Request): string {
+  return paramString(req.params.userId);
+}

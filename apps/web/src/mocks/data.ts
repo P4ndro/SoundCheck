@@ -1,4 +1,3 @@
-import { initialChatMessages } from "@/mocks/chat-data";
 import { MOCK_BAND_ID } from "@/mocks/constants";
 import type { BandWorkspace } from "@/types";
 import {
@@ -460,5 +459,4 @@ export const initialWorkspace: BandWorkspace = {
       notes: "30-minute slot. Tentative setlist TBD.",
     },
   ],
-  chatMessages: initialChatMessages,
 };

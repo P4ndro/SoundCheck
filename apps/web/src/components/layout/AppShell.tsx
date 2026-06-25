@@ -1,17 +1,12 @@
 import { cn } from "@/lib/cn";
-import { routeTitles } from "@/lib/navigation";
+import { resolveRouteTitle } from "@/lib/navigation";
 import { useState } from "react";
 import { Outlet, useLocation } from "react-router-dom";
 import { SidebarNav } from "./SidebarNav";
 import { TopAppBar } from "./TopAppBar";
 
 function resolveTitle(pathname: string): string {
-  if (routeTitles[pathname]) {
-    return routeTitles[pathname];
-  }
-
-  const base = `/${pathname.split("/")[1] ?? ""}`;
-  return routeTitles[base] ?? "Soundcheck";
+  return resolveRouteTitle(pathname);
 }
 
 export function AppShell() {
