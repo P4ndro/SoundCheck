@@ -11,6 +11,7 @@ import {
 } from "@/features/onboarding/components/OnboardingGuards";
 import { BandOnboardingPage } from "@/features/onboarding/pages/BandOnboardingPage";
 import { ProfileOnboardingPage } from "@/features/onboarding/pages/ProfileOnboardingPage";
+import { JoinInvitePage } from "@/features/band/pages/JoinInvitePage";
 import { SettingsPage } from "@/features/band/pages/SettingsPage";
 import { MemberProfilePage } from "@/features/band/pages/MemberProfilePage";
 import { CalendarPage } from "@/features/calendar/pages/CalendarPage";
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
     path: "/",
     children: [
       { index: true, element: <LandingPage /> },
+      { path: "join", element: <JoinInvitePage /> },
       {
         path: "login/*",
         element: (

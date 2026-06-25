@@ -1,4 +1,5 @@
 import { env } from "@/lib/env";
+import { normalizeInviteCode } from "@/lib/invite-code";
 import type {
   BandRole,
   BandWorkspace,
@@ -162,6 +163,12 @@ export interface JoinBandResponse {
   band: { id: string; name: string; createdAt: string };
 }
 
+export interface BandInviteResponse {
+  code: string;
+  shareUrl: string;
+  status: "active" | "expired";
+}
+
 export function fetchMe(getToken: TokenGetter): Promise<MeResponse> {
   return apiFetch<MeResponse>("/api/me", {
     method: "GET",
@@ -202,7 +209,17 @@ export function joinBandRequest(
   return apiFetch<JoinBandResponse>("/api/bands/join", {
     method: "POST",
     getToken,
-    body: { code },
+    body: { code: normalizeInviteCode(code) },
+  });
+}
+
+export function fetchBandInvite(
+  bandId: string,
+  getToken: TokenGetter,
+): Promise<BandInviteResponse> {
+  return apiFetch<BandInviteResponse>(`/api/bands/${bandId}/invite`, {
+    method: "GET",
+    getToken,
   });
 }
 

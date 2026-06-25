@@ -5,10 +5,12 @@ import type { ReactNode } from "react";
 
 interface ClerkSignUpEmbedProps {
   fallback?: ReactNode;
+  forceRedirectUrl?: string;
 }
 
 export function ClerkSignUpEmbed({
   fallback = <AuthClerkFallback />,
+  forceRedirectUrl = "/onboarding",
 }: ClerkSignUpEmbedProps) {
   return (
     <div className="clerk-auth-embed">
@@ -16,7 +18,7 @@ export function ClerkSignUpEmbed({
         routing="path"
         path="/signup"
         signInUrl="/login"
-        forceRedirectUrl="/onboarding"
+        forceRedirectUrl={forceRedirectUrl}
         appearance={clerkAuthAppearance}
         fallback={fallback}
       />

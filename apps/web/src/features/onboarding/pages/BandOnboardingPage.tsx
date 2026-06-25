@@ -5,28 +5,43 @@ import { Input } from "@/components/ui/Input";
 import { useSession } from "@/hooks/useSession";
 import { useActiveBand } from "@/hooks/useActiveBand";
 import { cn } from "@/lib/cn";
+import { normalizeInviteCode } from "@/lib/invite-code";
 import {
   createBandRequest,
   joinBandRequest,
 } from "@/services/api-client";
 import { useToast } from "@/providers/ToastProvider";
 import { useAuth } from "@clerk/clerk-react";
-import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useState, type FormEvent } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 type BandMode = "create" | "join";
 
 export function BandOnboardingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { getToken } = useAuth();
   const { refreshSession } = useSession();
   const { setActiveBandId } = useActiveBand();
   const { toast } = useToast();
-  const [mode, setMode] = useState<BandMode>("create");
+  const inviteFromUrl = searchParams.get("code");
+  const [mode, setMode] = useState<BandMode>(
+    inviteFromUrl ? "join" : "create",
+  );
   const [bandName, setBandName] = useState("");
-  const [inviteCode, setInviteCode] = useState("");
+  const [inviteCode, setInviteCode] = useState(
+    inviteFromUrl ? normalizeInviteCode(inviteFromUrl) : "",
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!inviteFromUrl) return;
+    const normalized = normalizeInviteCode(inviteFromUrl);
+    if (!normalized) return;
+    setMode("join");
+    setInviteCode(normalized);
+  }, [inviteFromUrl]);
 
   const handleCreate = async (event: FormEvent) => {
     event.preventDefault();

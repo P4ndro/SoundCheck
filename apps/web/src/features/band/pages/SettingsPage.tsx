@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { CreateBandModal } from "@/features/band/components/CreateBandModal";
 import { InviteMemberModal } from "@/features/band/components/InviteMemberModal";
 import { JoinBandModal } from "@/features/band/components/JoinBandModal";
+import { useActiveBand } from "@/hooks/useActiveBand";
 import { formatDate } from "@/lib/format";
 import { getMemberLabel } from "@/lib/roles";
 import { useBandWorkspace } from "@/hooks/useBandWorkspace";
@@ -16,6 +17,7 @@ import { useNavigate } from "react-router-dom";
 
 export function SettingsPage() {
   const { band, members, users, updateBandName } = useBandWorkspace();
+  const { activeBand } = useActiveBand();
   const navigate = useNavigate();
   const [bandName, setBandName] = useState(band.name);
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -140,6 +142,7 @@ export function SettingsPage() {
       <InviteMemberModal
         open={inviteOpen}
         onClose={() => setInviteOpen(false)}
+        bandId={activeBand?.id}
       />
       <CreateBandModal
         open={createBandOpen}

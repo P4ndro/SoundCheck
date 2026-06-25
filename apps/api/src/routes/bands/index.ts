@@ -9,6 +9,7 @@ import { bandIdParamsSchema } from "../../schemas/song.js";
 import { bandOnboardingRouter } from "./onboarding.js";
 import { chatRouter } from "./chat.js";
 import { eventsRouter } from "./events.js";
+import { inviteRouter } from "./invite.js";
 import { membersRouter } from "./members.js";
 import { setlistsRouter } from "./setlists.js";
 import { songsRouter } from "./songs.js";
@@ -46,5 +47,6 @@ bandScopedRouter.use("/setlists", setlistsRouter);
 bandScopedRouter.use("/events", eventsRouter);
 bandScopedRouter.use("/chat", chatRouter);
 bandScopedRouter.use("/members", membersRouter);
+bandScopedRouter.use("/invite", inviteRouter);
 
 bandsRouter.use("/:bandId", bandScopedRouter);

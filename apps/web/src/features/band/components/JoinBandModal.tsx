@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/Input";
 import { ModalDialog } from "@/components/ui/ModalDialog";
 import { useActiveBand } from "@/hooks/useActiveBand";
 import { useSession } from "@/hooks/useSession";
+import { normalizeInviteCode } from "@/lib/invite-code";
 import { joinBandRequest } from "@/services/api-client";
 import { useAuth } from "@clerk/clerk-react";
 import { useEffect, useState } from "react";
@@ -83,10 +84,14 @@ export function JoinBandModal({ open, onClose, onJoined }: JoinBandModalProps) {
           id="join-band-code"
           placeholder="MARLOWE-DEMO"
           value={inviteCode}
-          onChange={(event) => {
-            setInviteCode(event.target.value);
-            if (error) setError(null);
-          }}
+              onChange={(event) => {
+                setInviteCode(event.target.value);
+                if (error) setError(null);
+              }}
+              onBlur={(event) => {
+                const normalized = normalizeInviteCode(event.target.value);
+                if (normalized) setInviteCode(normalized);
+              }}
           disabled={submitting}
           className="font-mono uppercase"
           autoFocus

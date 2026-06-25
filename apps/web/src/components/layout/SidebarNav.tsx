@@ -1,14 +1,16 @@
 import { Button } from "@/components/ui/Button";
 import { ModalDialog } from "@/components/ui/ModalDialog";
 import { SidebarContextPanel } from "@/components/layout/SidebarContextPanel";
+import { useActiveBand } from "@/hooks/useActiveBand";
 import { useBandWorkspace } from "@/hooks/useBandWorkspace";
+import { useChatUnread } from "@/hooks/useChatUnread";
 import { cn } from "@/lib/cn";
 import { primaryNav, settingsNav } from "@/lib/navigation";
 import { useToast } from "@/providers/ToastProvider";
 import { useClerk } from "@clerk/clerk-react";
 import { LogOut, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useMatch, useNavigate } from "react-router-dom";
 
 export interface SidebarNavProps {
   collapsed: boolean;
@@ -29,11 +31,43 @@ function sidebarLinkClass(collapsed: boolean, isActive: boolean) {
 
 const navIconClass = "h-5 w-5 shrink-0";
 
+function ChatNavBadge({
+  count,
+  collapsed,
+}: {
+  count: number;
+  collapsed: boolean;
+}) {
+  if (collapsed) {
+    return (
+      <span
+        className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-accent ring-2 ring-surface-1"
+        aria-hidden
+      />
+    );
+  }
+
+  return (
+    <span
+      className="absolute -top-1.5 -right-1.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold leading-none text-foreground ring-2 ring-surface-1"
+      aria-hidden
+    >
+      {count > 9 ? "9+" : count}
+    </span>
+  );
+}
+
 export function SidebarNav({ collapsed, onToggleCollapse }: SidebarNavProps) {
   const { band, currentUser } = useBandWorkspace();
+  const { activeBand } = useActiveBand();
+  const { unreadCount, hasUnread } = useChatUnread(
+    activeBand?.id,
+    currentUser.id,
+  );
   const { toast } = useToast();
   const { signOut } = useClerk();
   const navigate = useNavigate();
+  const isOnChatRoute = useMatch("/chat") != null;
   const [signOutOpen, setSignOutOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -81,17 +115,47 @@ export function SidebarNav({ collapsed, onToggleCollapse }: SidebarNavProps) {
         </div>
 
         <nav className="shrink-0 space-y-1 p-3" aria-label="Primary">
-          {primaryNav.map(({ label, href, icon: Icon }) => (
-            <NavLink
-              key={href}
-              to={href}
-              title={collapsed ? label : undefined}
-              className={({ isActive }) => sidebarLinkClass(collapsed, isActive)}
-            >
-              <Icon className={navIconClass} strokeWidth={1.75} />
-              {!collapsed && <span className="truncate">{label}</span>}
-            </NavLink>
-          ))}
+          {primaryNav.map(({ label, href, icon: Icon }) => {
+            const isChat = href === "/chat";
+            const showUnread = isChat && hasUnread && !isOnChatRoute;
+
+            return (
+              <NavLink
+                key={href}
+                to={href}
+                title={
+                  collapsed
+                    ? showUnread
+                      ? `${label} (${unreadCount} unread)`
+                      : label
+                    : undefined
+                }
+                aria-label={
+                  showUnread ? `${label}, ${unreadCount} unread` : label
+                }
+                className={({ isActive }) =>
+                  sidebarLinkClass(collapsed, isActive)
+                }
+              >
+                <span className="relative shrink-0">
+                  <Icon className={navIconClass} strokeWidth={1.75} />
+                  {showUnread && (
+                    <ChatNavBadge count={unreadCount} collapsed={collapsed} />
+                  )}
+                </span>
+                {!collapsed && (
+                  <span className="flex min-w-0 flex-1 items-center justify-between gap-2 truncate">
+                    <span className="truncate">{label}</span>
+                    {showUnread && (
+                      <span className="shrink-0 rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold leading-none text-foreground">
+                        {unreadCount > 9 ? "9+" : unreadCount}
+                      </span>
+                    )}
+                  </span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <SidebarContextPanel collapsed={collapsed} />

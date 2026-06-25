@@ -1,8 +1,14 @@
 import { asyncHandler } from "../../lib/async-handler.js";
-import { generateInviteCode, normalizeInviteCode } from "../../lib/invite-code.js";
+import { normalizeInviteCode } from "../../lib/invite-code.js";
+import {
+  createBandInvite,
+  INVALID_INVITE_MESSAGE,
+  isInviteActive,
+} from "../../lib/invite-service.js";
 import { prisma } from "../../lib/prisma.js";
 import { serializeBand } from "../../lib/serializers.js";
 import { ApiError } from "../../middleware/error-handler.js";
+import { enforceJoinRateLimit } from "../../middleware/join-rate-limit.js";
 import { validate } from "../../middleware/validate.js";
 import {
   createBandSchema,
@@ -49,27 +55,9 @@ bandOnboardingRouter.post(
         },
       });
 
-      let inviteCode = generateInviteCode();
-      for (let attempt = 0; attempt < 5; attempt += 1) {
-        try {
-          await tx.bandInvite.create({
-            data: {
-              id: `invite-${crypto.randomUUID().slice(0, 8)}`,
-              bandId: band.id,
-              code: inviteCode,
-              createdBy: user.id,
-            },
-          });
-          break;
-        } catch {
-          inviteCode = generateInviteCode();
-          if (attempt === 4) {
-            throw new ApiError(500, "Could not generate invite code");
-          }
-        }
-      }
+      const invite = await createBandInvite(tx, band.id, user.id);
 
-      return { band, inviteCode };
+      return { band, inviteCode: invite.code };
     });
 
     res.status(201).json({
@@ -83,6 +71,8 @@ bandOnboardingRouter.post(
   "/join",
   validate(joinBandSchema),
   asyncHandler(async (req, res) => {
+    enforceJoinRateLimit(req);
+
     const user = req.dbUser!;
 
     if (!user.profileCompletedAt || !user.primaryRole) {
@@ -96,16 +86,8 @@ bandOnboardingRouter.post(
       include: { band: true },
     });
 
-    if (!invite) {
-      throw new ApiError(404, "Invalid invite code");
-    }
-
-    if (invite.expiresAt && invite.expiresAt < new Date()) {
-      throw new ApiError(410, "This invite code has expired");
-    }
-
-    if (invite.maxUses != null && invite.useCount >= invite.maxUses) {
-      throw new ApiError(410, "This invite code has reached its use limit");
+    if (!invite || !isInviteActive(invite)) {
+      throw new ApiError(404, INVALID_INVITE_MESSAGE);
     }
 
     const alreadyMember = await prisma.bandMember.findUnique({

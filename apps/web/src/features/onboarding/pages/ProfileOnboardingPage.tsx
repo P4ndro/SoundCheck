@@ -9,7 +9,8 @@ import { updateProfileRequest } from "@/services/api-client";
 import type { BandRole } from "@/types";
 import { useAuth, useUser } from "@clerk/clerk-react";
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { normalizeInviteCode } from "@/lib/invite-code";
 
 const PROFILE_ROLES: BandRole[] = [
   "bass",
@@ -22,6 +23,8 @@ const PROFILE_ROLES: BandRole[] = [
 
 export function ProfileOnboardingPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const inviteCode = searchParams.get("code");
   const { getToken } = useAuth();
   const { user: clerkUser } = useUser();
   const { session, refreshSession } = useSession();
@@ -61,7 +64,15 @@ export function ProfileOnboardingPage() {
         getToken,
       );
       await refreshSession();
-      navigate("/onboarding/band", { replace: true });
+      const normalizedCode = inviteCode
+        ? normalizeInviteCode(inviteCode)
+        : "";
+      navigate(
+        normalizedCode
+          ? `/onboarding/band?code=${encodeURIComponent(normalizedCode)}`
+          : "/onboarding/band",
+        { replace: true },
+      );
     } catch (submitError) {
       setError(
         submitError instanceof Error
