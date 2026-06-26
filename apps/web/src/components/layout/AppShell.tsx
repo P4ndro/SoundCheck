@@ -13,7 +13,10 @@ export function AppShell() {
   const [collapsed, setCollapsed] = useState(false);
   const { pathname } = useLocation();
   const title = resolveTitle(pathname);
-  const isFullHeightPage = pathname === "/tabs" || pathname === "/chat";
+  const isFullHeightPage =
+    pathname === "/tabs" ||
+    pathname === "/tabs/edit" ||
+    pathname === "/chat";
 
   return (
     <div className="flex h-screen max-h-screen overflow-hidden bg-background">

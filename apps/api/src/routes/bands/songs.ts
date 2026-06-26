@@ -13,9 +13,12 @@ import {
   updateSongSchema,
 } from "../../schemas/song.js";
 import type { CreateSongInput, UpdateSongInput } from "../../schemas/song.js";
+import { songTabsRouter } from "./song-tabs.js";
 import { Router } from "express";
 
 export const songsRouter = Router({ mergeParams: true });
+
+songsRouter.use("/:songId/tabs", songTabsRouter);
 
 songsRouter.get(
   "/",

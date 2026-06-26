@@ -144,6 +144,7 @@ model InstrumentTab {
 
   @@index([songId])
   @@index([bandId, instrument])
+  @@unique([songId, instrument])
 }
 
 model Setlist {

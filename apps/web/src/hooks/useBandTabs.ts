@@ -1,23 +1,28 @@
 import { useActiveBand } from "@/hooks/useActiveBand";
+import { useSongTabsQuery } from "@/hooks/useSongTabsQuery";
 import { useWorkspaceQuery } from "@/hooks/useWorkspaceQuery";
 
-/**
- * Instrument tabs from the workspace cache until a dedicated tabs API exists.
- * Phase 5: replace with useQuery({ queryKey: queryKeys.tabs(bandId, songId), ... }).
- */
 export function useBandTabs(songId?: string) {
   const { activeBand } = useActiveBand();
-  const { data } = useWorkspaceQuery(activeBand?.id);
+  const bandId = activeBand?.id;
+  const workspaceQuery = useWorkspaceQuery(bandId);
+  const songTabsQuery = useSongTabsQuery(bandId, songId);
 
-  const tabs = data?.tabs ?? [];
-  const songs = data?.songs ?? [];
+  const songs = workspaceQuery.data?.songs ?? [];
 
-  const filteredTabs = songId
-    ? tabs.filter((tab) => tab.songId === songId)
-    : tabs;
+  if (songId) {
+    return {
+      tabs: songTabsQuery.data?.tabs ?? [],
+      songs,
+      isLoading: songTabsQuery.isPending,
+      error: songTabsQuery.error,
+    };
+  }
 
   return {
-    tabs: filteredTabs,
+    tabs: workspaceQuery.data?.tabs ?? [],
     songs,
+    isLoading: workspaceQuery.isPending,
+    error: workspaceQuery.error,
   };
 }

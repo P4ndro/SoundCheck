@@ -18,6 +18,7 @@ import {
   createSetlistRequest,
   createSongRequest,
   deleteSetlistRequest,
+  deleteSongRequest,
   duplicateSetlistRequest,
   removeSongFromSetlistRequest,
   reorderSetlistRequest,
@@ -215,6 +216,27 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       if (!isSignedIn || !bandId) return;
 
       void deleteSetlistRequest(bandId, setlistId, getToken).catch(() => {
+        void reloadWorkspace();
+      });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
+  );
+
+  const deleteSong = useCallback(
+    (songId: string) => {
+      patchWorkspace((prev) => ({
+        ...prev,
+        songs: prev.songs.filter((s) => s.id !== songId),
+        tabs: prev.tabs.filter((tab) => tab.songId !== songId),
+        setlists: prev.setlists.map((setlist) => ({
+          ...setlist,
+          songIds: setlist.songIds.filter((id) => id !== songId),
+        })),
+      }));
+
+      if (!isSignedIn || !bandId) return;
+
+      void deleteSongRequest(bandId, songId, getToken).catch(() => {
         void reloadWorkspace();
       });
     },
@@ -461,6 +483,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       reorderSetlistSongs,
       duplicateSetlist,
       deleteSetlist,
+      deleteSong,
       removeSongFromSetlist,
       addSongToSetlist,
       addSong,
@@ -480,6 +503,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       reorderSetlistSongs,
       duplicateSetlist,
       deleteSetlist,
+      deleteSong,
       removeSongFromSetlist,
       addSongToSetlist,
       addSong,

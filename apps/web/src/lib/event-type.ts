@@ -37,5 +37,4 @@ export const eventTypePickerStyles: Record<EventType, string> = {
 
 export const EVENT_TYPES: EventType[] = ["rehearsal", "gig", "meeting"];
 
-/** @deprecated use eventTypeChipStyles */
 export const eventTypeColors = eventTypeChipStyles;

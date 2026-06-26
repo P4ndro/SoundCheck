@@ -1,7 +1,3 @@
-/** Fixed-width ASCII tab helpers — one measure = MEASURE_WIDTH chars */
-
-
-
 export const MEASURE_WIDTH = 14;
 
 

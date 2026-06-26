@@ -2,7 +2,6 @@ import { cn } from "@/lib/cn";
 import type { ReactNode } from "react";
 
 export interface PageHeaderProps {
-  /** Omit when the top app bar already shows the page title */
   title?: string;
   description?: string;
   actions?: ReactNode;

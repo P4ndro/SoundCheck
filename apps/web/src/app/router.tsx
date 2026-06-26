@@ -21,6 +21,7 @@ import { SongDetailPage } from "@/features/songs/pages/SongDetailPage";
 import { SongsPage } from "@/features/songs/pages/SongsPage";
 import { ChatPage } from "@/features/chat/pages/ChatPage";
 import { TabsPage } from "@/features/tabs/pages/TabsPage";
+import { TabEditPage } from "@/features/tabs/pages/TabEditPage";
 import { createBrowserRouter, Outlet } from "react-router-dom";
 
 export const router = createBrowserRouter([
@@ -81,6 +82,7 @@ export const router = createBrowserRouter([
           { path: "setlists/:id", element: <SetlistDetailPage /> },
           { path: "calendar", element: <CalendarPage /> },
           { path: "tabs", element: <TabsPage /> },
+          { path: "tabs/edit", element: <TabEditPage /> },
           { path: "chat", element: <ChatPage /> },
           { path: "settings", element: <SettingsPage /> },
           { path: "settings/members/:userId", element: <MemberProfilePage /> },

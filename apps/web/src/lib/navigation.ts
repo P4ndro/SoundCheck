@@ -33,6 +33,7 @@ export const routeTitles: Record<string, string> = {
   "/setlists": "Setlists",
   "/calendar": "Calendar",
   "/tabs": "Tabs",
+  "/tabs/edit": "Edit notation",
   "/chat": "Chat",
   "/settings": "Band Settings",
 };

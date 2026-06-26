@@ -87,7 +87,6 @@ export function shouldShowSenderHeader(
   return gap > CLUSTER_GAP_MS;
 }
 
-/** Extra vertical gap before a message that starts a new cluster. */
 export function shouldAddClusterGap(
   messages: ChatMessage[],
   index: number,

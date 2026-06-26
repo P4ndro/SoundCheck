@@ -2,7 +2,6 @@ import { NotationMetaBar } from "@/components/shared/NotationMetaBar";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { TabContentViewer } from "@/features/songs/components/TabContentViewer";
 import { Button } from "@/components/ui/Button";
-import { AddNotationModal } from "@/features/tabs/components/AddNotationModal";
 import { useToast } from "@/providers/ToastProvider";
 import { formatBpm, formatDuration } from "@/lib/format";
 import { tabCapoForDisplay } from "@/lib/tab-display";
@@ -22,10 +21,12 @@ import {
   Music2,
   PanelLeftClose,
   PanelLeftOpen,
+  Pencil,
   Plus,
   type LucideIcon,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const instrumentIcons: Partial<Record<Instrument, LucideIcon>> = {
   bass: Music2,
@@ -36,16 +37,39 @@ const instrumentIcons: Partial<Record<Instrument, LucideIcon>> = {
 };
 
 export function TabsPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { songs, tabs } = useBandWorkspace();
   const memberRole = useCurrentMemberRole();
   const defaultInstrument = roleToInstrument(memberRole ?? "bass") ?? "bass";
+  const ownInstrument = roleToInstrument(memberRole ?? "custom");
 
-  const [instrument, setInstrument] = useState<Instrument>(defaultInstrument);
-  const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
+  const [instrument, setInstrument] = useState<Instrument>(() => {
+    const fromUrl = searchParams.get("instrument");
+    if (fromUrl && fromUrl in instrumentIcons) {
+      return fromUrl as Instrument;
+    }
+    return defaultInstrument;
+  });
+  const [selectedSongId, setSelectedSongId] = useState<string | null>(
+    () => searchParams.get("songId"),
+  );
   const [songListOpen, setSongListOpen] = useState(true);
-  const [addNotationOpen, setAddNotationOpen] = useState(false);
-  const [notationSongId, setNotationSongId] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("instrument");
+    if (fromUrl && fromUrl in instrumentIcons) {
+      setInstrument(fromUrl as Instrument);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fromUrl = searchParams.get("songId");
+    if (fromUrl) {
+      setSelectedSongId(fromUrl);
+    }
+  }, [searchParams]);
 
   const songsWithTabs = useMemo(() => {
     const songIds = new Set(
@@ -75,6 +99,17 @@ export function TabsPage() {
   }, [tabs]);
 
   const instrumentLabel = activeTab?.trackName ?? roleLabels[instrument];
+  const canEditOwnPart =
+    ownInstrument === instrument && Boolean(selectedSong);
+
+  const openEditor = (songId: string) => {
+    if (!ownInstrument) {
+      toast("Custom roles cannot edit notation yet", "info");
+      return;
+    }
+
+    navigate(`/tabs/edit?songId=${encodeURIComponent(songId)}`);
+  };
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
@@ -82,17 +117,29 @@ export function TabsPage() {
         className="shrink-0"
         description="Your instrument notation — switch songs and parts quickly."
         actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              setNotationSongId(selectedSong?.id ?? songs[0]?.id ?? "");
-              setAddNotationOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" />
-            Add notation
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            {canEditOwnPart && activeTab && (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => openEditor(selectedSong!.id)}
+              >
+                <Pencil className="h-4 w-4" />
+                Edit notation
+              </Button>
+            )}
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() =>
+                openEditor(selectedSong?.id ?? songs[0]?.id ?? "")
+              }
+              disabled={!songs.length || !ownInstrument}
+            >
+              <Plus className="h-4 w-4" />
+              Add notation
+            </Button>
+          </div>
         }
       />
 
@@ -148,7 +195,8 @@ export function TabsPage() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setAddNotationOpen(true)}
+            onClick={() => openEditor(songs[0]?.id ?? "")}
+            disabled={!songs.length || !ownInstrument}
           >
             <Plus className="h-4 w-4" />
             Add notation
@@ -283,19 +331,6 @@ export function TabsPage() {
           </div>
         </div>
       )}
-
-      <AddNotationModal
-        open={addNotationOpen}
-        onClose={() => setAddNotationOpen(false)}
-        songs={songs}
-        songId={notationSongId}
-        instrument={instrument}
-        onSongIdChange={setNotationSongId}
-        onContinue={() => {
-          setAddNotationOpen(false);
-          toast("Notation editor ships in the next phase", "info");
-        }}
-      />
     </div>
   );
 }

@@ -24,7 +24,6 @@ export type EventType = "rehearsal" | "gig" | "meeting";
 export interface User {
   id: string;
   name: string;
-  /** Present for the signed-in user only. */
   email?: string;
   avatarUrl?: string;
   primaryRole?: BandRole;
@@ -74,14 +73,10 @@ export interface Song {
   bandId: string;
   title: string;
   bpm: number | null;
-  /** e.g. "4/4", "6/8", "3/4" */
   timeSignature: string;
-  /** Performance length in seconds */
   durationSeconds: number;
   status: SongStatus;
-  /** e.g. "Am", "E minor" */
   key: string;
-  /** e.g. "E A D G", "Drop D" */
   tuning: string;
   lyrics: string;
   notes: string;
@@ -96,7 +91,6 @@ export interface InstrumentTab {
   asciiTab: string;
   chordChart: string;
   capo?: number | null;
-  /** Display label when multiple guitar parts exist */
   trackName?: string;
 }
 

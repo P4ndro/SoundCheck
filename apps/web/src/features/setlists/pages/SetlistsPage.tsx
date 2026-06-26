@@ -1,3 +1,4 @@
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
@@ -18,6 +19,7 @@ export function SetlistsPage() {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [setlistToDelete, setSetlistToDelete] = useState<Setlist | null>(null);
 
   useActionSearchParam("create", setCreateOpen);
 
@@ -87,9 +89,7 @@ export function SetlistsPage() {
               label={`Delete ${setlist.name}`}
               onClick={(e) => {
                 e.stopPropagation();
-                if (confirm(`Delete "${setlist.name}"?`)) {
-                  deleteSetlist(setlist.id);
-                }
+                setSetlistToDelete(setlist);
               }}
             >
               <Trash2 className="h-4 w-4" />
@@ -135,6 +135,16 @@ export function SetlistsPage() {
               toast("Could not create setlist");
             });
         }}
+      />
+
+      <ConfirmDeleteModal
+        open={setlistToDelete !== null}
+        onClose={() => setSetlistToDelete(null)}
+        onConfirm={() => {
+          if (setlistToDelete) deleteSetlist(setlistToDelete.id);
+        }}
+        itemType="setlist"
+        itemName={setlistToDelete?.name ?? ""}
       />
     </div>
   );

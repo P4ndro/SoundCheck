@@ -5,7 +5,6 @@ import { Link } from "react-router-dom";
 export interface BrandMarkProps {
   subtitle?: string;
   className?: string;
-  /** When set, the mark links to this route (e.g. `/`). */
   href?: string;
   size?: "sm" | "md";
 }

@@ -5,6 +5,7 @@ import type {
   BandWorkspace,
   BandEvent,
   ChatMessage,
+  InstrumentTab,
   MemberProfile,
   OnboardingState,
   Setlist,
@@ -28,9 +29,7 @@ type TokenGetter = () => Promise<string | null>;
 interface ApiFetchOptions extends Omit<RequestInit, "body"> {
   getToken: TokenGetter;
   body?: unknown;
-  /** Retry count for transient failures (default 0). */
   retries?: number;
-  /** Request timeout in ms (default 25s). */
   timeoutMs?: number;
 }
 
@@ -256,6 +255,17 @@ export function updateSongRequest(
     method: "PATCH",
     getToken,
     body: data,
+  });
+}
+
+export function deleteSongRequest(
+  bandId: string,
+  songId: string,
+  getToken: TokenGetter,
+): Promise<void> {
+  return apiFetch<void>(`/api/bands/${bandId}/songs/${songId}`, {
+    method: "DELETE",
+    getToken,
   });
 }
 
@@ -490,4 +500,58 @@ export async function uploadChatImageRequest(
   }
 
   return { imageUrl: payload.imageUrl };
+}
+
+export interface SaveTabInput {
+  asciiTab: string;
+  chordChart: string;
+  capo?: number | null;
+  trackName?: string;
+}
+
+export function fetchSongTabs(
+  bandId: string,
+  songId: string,
+  getToken: TokenGetter,
+): Promise<{ tabs: InstrumentTab[] }> {
+  return apiFetch<{ tabs: InstrumentTab[] }>(
+    `/api/bands/${bandId}/songs/${songId}/tabs`,
+    {
+      method: "GET",
+      getToken,
+    },
+  );
+}
+
+export function createTabRequest(
+  bandId: string,
+  songId: string,
+  data: SaveTabInput,
+  getToken: TokenGetter,
+): Promise<{ tab: InstrumentTab }> {
+  return apiFetch<{ tab: InstrumentTab }>(
+    `/api/bands/${bandId}/songs/${songId}/tabs`,
+    {
+      method: "POST",
+      getToken,
+      body: data,
+    },
+  );
+}
+
+export function updateTabRequest(
+  bandId: string,
+  songId: string,
+  tabId: string,
+  data: SaveTabInput,
+  getToken: TokenGetter,
+): Promise<{ tab: InstrumentTab }> {
+  return apiFetch<{ tab: InstrumentTab }>(
+    `/api/bands/${bandId}/songs/${songId}/tabs/${tabId}`,
+    {
+      method: "PATCH",
+      getToken,
+      body: data,
+    },
+  );
 }

@@ -11,7 +11,6 @@ export interface AuthShellProps {
   children: ReactNode;
   footer?: ReactNode;
   className?: string;
-  /** Use for Clerk SignIn/SignUp — avoids double-card layout issues */
   variant?: "default" | "clerk";
 }
 

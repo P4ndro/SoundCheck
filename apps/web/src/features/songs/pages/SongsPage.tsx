@@ -1,3 +1,4 @@
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { FilterBar } from "@/components/shared/FilterBar";
 import { KanbanBoard } from "@/components/shared/KanbanBoard";
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -5,6 +6,7 @@ import { SongCard } from "@/components/shared/SongCard";
 import { ViewToggle } from "@/components/shared/ViewToggle";
 import { Button } from "@/components/ui/Button";
 import { DataTable } from "@/components/ui/DataTable";
+import { IconButton } from "@/components/ui/IconButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { SongStatusFilters } from "@/features/songs/components/SongStatusFilters";
 import { formatBpm, formatDuration, formatRelativeDate } from "@/lib/format";
@@ -16,20 +18,21 @@ import { useActionSearchParam } from "@/hooks/useActionSearchParam";
 import { formValuesToSongPayload } from "@/lib/song-form";
 import { filterSongsByTitle } from "@/lib/song-utils";
 import { useToast } from "@/providers/ToastProvider";
-import { LayoutGrid, Plus, Table2 } from "lucide-react";
+import { LayoutGrid, Plus, Table2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 type SongsView = "table" | "kanban";
 
 export function SongsPage() {
-  const { songs, addSong } = useBandWorkspace();
+  const { songs, addSong, deleteSong } = useBandWorkspace();
   const { toast } = useToast();
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<SongStatus | "all">("all");
   const [view, setView] = useState<SongsView>("table");
   const [addOpen, setAddOpen] = useState(false);
+  const [songToDelete, setSongToDelete] = useState<Song | null>(null);
 
   useActionSearchParam("add", setAddOpen);
 
@@ -81,8 +84,27 @@ export function SongsPage() {
         ),
         className: "w-36",
       },
+      {
+        key: "actions",
+        header: "",
+        cell: (song: Song) => (
+          <div className="flex justify-end gap-1">
+            <IconButton
+              tone="danger"
+              label={`Delete ${song.title}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                setSongToDelete(song);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </IconButton>
+          </div>
+        ),
+        className: "w-16",
+      },
     ],
-    [],
+    [deleteSong],
   );
 
   return (
@@ -160,6 +182,16 @@ export function SongsPage() {
           toast(`"${song.title}" added to library`);
           navigate(`/songs/${song.id}`);
         }}
+      />
+
+      <ConfirmDeleteModal
+        open={songToDelete !== null}
+        onClose={() => setSongToDelete(null)}
+        onConfirm={() => {
+          if (songToDelete) deleteSong(songToDelete.id);
+        }}
+        itemType="song"
+        itemName={songToDelete?.title ?? ""}
       />
     </div>
   );

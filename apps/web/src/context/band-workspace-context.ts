@@ -17,6 +17,7 @@ export interface BandWorkspaceContextValue extends BandWorkspace {
   reorderSetlistSongs: (setlistId: string, fromIndex: number, toIndex: number) => void;
   duplicateSetlist: (setlistId: string) => void;
   deleteSetlist: (setlistId: string) => void;
+  deleteSong: (songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   addSongToSetlist: (setlistId: string, songId: string) => void;
   addSong: (song: Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">) => Song;
