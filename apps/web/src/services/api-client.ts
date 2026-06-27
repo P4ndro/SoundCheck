@@ -407,6 +407,21 @@ export function deleteEventRequest(
   });
 }
 
+export function updateBandRequest(
+  bandId: string,
+  data: { name: string },
+  getToken: TokenGetter,
+): Promise<{ band: BandWorkspace["band"] }> {
+  return apiFetch<{ band: BandWorkspace["band"] }>(
+    `/api/bands/${bandId}`,
+    {
+      method: "PATCH",
+      getToken,
+      body: data,
+    },
+  );
+}
+
 export function fetchMemberProfile(
   bandId: string,
   userId: string,

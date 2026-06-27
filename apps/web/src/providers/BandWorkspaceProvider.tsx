@@ -7,6 +7,7 @@ import { useSession } from "@/hooks/useSession";
 import { useWorkspaceQuery } from "@/hooks/useWorkspaceQuery";
 import { createId } from "@/lib/create-id";
 import { queryKeys } from "@/lib/query-keys";
+import { emptyWorkspace } from "@/lib/empty-workspace";
 import { initialWorkspace } from "@/mocks/data";
 import {
   runWorkspaceMutation,
@@ -17,11 +18,14 @@ import {
   createEventRequest,
   createSetlistRequest,
   createSongRequest,
+  deleteEventRequest,
   deleteSetlistRequest,
   deleteSongRequest,
   duplicateSetlistRequest,
   removeSongFromSetlistRequest,
   reorderSetlistRequest,
+  updateBandRequest,
+  updateEventRequest,
   updateSongRequest,
 } from "@/services/api-client";
 import type {
@@ -34,6 +38,10 @@ import { useAuth } from "@clerk/clerk-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useMemo, type ReactNode } from "react";
 
+function workspacePlaceholder(): BandWorkspace {
+  return import.meta.env.DEV ? initialWorkspace : emptyWorkspace;
+}
+
 export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
   const { isSignedIn, getToken } = useAuth();
   const { session } = useSession();
@@ -42,7 +50,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
   const bandId = activeBand?.id;
 
   const workspaceQuery = useWorkspaceQuery(bandId);
-  const workspace = workspaceQuery.data ?? initialWorkspace;
+  const workspace = workspaceQuery.data ?? workspacePlaceholder();
 
   const isWorkspaceStale = Boolean(
     bandId && workspaceQuery.data && workspaceQuery.data.band.id !== bandId,
@@ -70,7 +78,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       if (!bandId) return;
       queryClient.setQueryData<BandWorkspace>(
         queryKeys.workspace(bandId),
-        (old) => updater(old ?? initialWorkspace),
+        (old) => updater(old ?? workspacePlaceholder()),
       );
     },
     [bandId, queryClient],
@@ -100,12 +108,34 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
 
   const updateBandName = useCallback(
     (name: string) => {
+      const trimmed = name.trim();
+      if (!trimmed) {
+        return Promise.reject(new Error("Band name is required"));
+      }
+
       patchWorkspace((prev) => ({
         ...prev,
-        band: { ...prev.band, name },
+        band: { ...prev.band, name: trimmed },
       }));
+
+      if (!isSignedIn || !bandId) {
+        return Promise.resolve();
+      }
+
+      return updateBandRequest(bandId, { name: trimmed }, getToken)
+        .then(({ band }) => {
+          patchWorkspace((prev) => ({
+            ...prev,
+            band,
+          }));
+          void queryClient.invalidateQueries({ queryKey: queryKeys.me });
+        })
+        .catch(() => {
+          void reloadWorkspace();
+          throw new Error("Could not update band name");
+        });
     },
-    [patchWorkspace],
+    [bandId, getToken, isSignedIn, patchWorkspace, queryClient, reloadWorkspace],
   );
 
   const workspaceBandId = workspace.band.id;
@@ -470,6 +500,62 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
     [bandId, getToken, isSignedIn, patchWorkspace],
   );
 
+  const updateEvent = useCallback(
+    (
+      eventId: string,
+      patch: Partial<Omit<BandEvent, "id" | "bandId">>,
+    ) => {
+      patchWorkspace((prev) => ({
+        ...prev,
+        events: prev.events
+          .map((event) =>
+            event.id === eventId ? { ...event, ...patch } : event,
+          )
+          .sort(
+            (a, b) => new Date(a.start).getTime() - new Date(b.start).getTime(),
+          ),
+      }));
+
+      if (!isSignedIn || !bandId) {
+        return Promise.resolve();
+      }
+
+      return updateEventRequest(bandId, eventId, patch, getToken)
+        .then(({ event }) => {
+          patchWorkspace((prev) => ({
+            ...prev,
+            events: prev.events
+              .map((item) => (item.id === eventId ? event : item))
+              .sort(
+                (a, b) =>
+                  new Date(a.start).getTime() - new Date(b.start).getTime(),
+              ),
+          }));
+        })
+        .catch(() => {
+          void reloadWorkspace();
+          throw new Error("Could not update event");
+        });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
+  );
+
+  const deleteEvent = useCallback(
+    (eventId: string) => {
+      patchWorkspace((prev) => ({
+        ...prev,
+        events: prev.events.filter((event) => event.id !== eventId),
+      }));
+
+      if (!isSignedIn || !bandId) return;
+
+      void deleteEventRequest(bandId, eventId, getToken).catch(() => {
+        void reloadWorkspace();
+      });
+    },
+    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
+  );
+
   const value = useMemo<BandWorkspaceContextValue>(
     () => ({
       ...workspace,
@@ -490,6 +576,8 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       updateSong,
       createSetlist,
       addEvent,
+      updateEvent,
+      deleteEvent,
     }),
     [
       workspace,
@@ -510,6 +598,8 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       updateSong,
       createSetlist,
       addEvent,
+      updateEvent,
+      deleteEvent,
     ],
   );
 

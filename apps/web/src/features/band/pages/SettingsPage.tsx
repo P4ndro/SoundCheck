@@ -10,6 +10,7 @@ import { useActiveBand } from "@/hooks/useActiveBand";
 import { formatDate } from "@/lib/format";
 import { getMemberLabel } from "@/lib/roles";
 import { useBandWorkspace } from "@/hooks/useBandWorkspace";
+import { useToast } from "@/providers/ToastProvider";
 import type { BandMember } from "@/types";
 import { Plus, UserPlus, Users } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -17,6 +18,7 @@ import { useNavigate } from "react-router-dom";
 
 export function SettingsPage() {
   const { band, members, users, updateBandName } = useBandWorkspace();
+  const { toast } = useToast();
   const { activeBand } = useActiveBand();
   const navigate = useNavigate();
   const [bandName, setBandName] = useState(band.name);
@@ -97,7 +99,11 @@ export function SettingsPage() {
             </div>
             <Button
               variant="secondary"
-              onClick={() => updateBandName(bandName)}
+              onClick={() => {
+                void Promise.resolve(updateBandName(bandName))
+                  .then(() => toast("Band name updated"))
+                  .catch(() => toast("Could not update band name"));
+              }}
               disabled={bandName.trim() === "" || bandName === band.name}
             >
               Save

@@ -6,18 +6,20 @@ export interface ConfirmDeleteModalProps {
   open: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  itemType: "song" | "setlist";
+  itemType: "song" | "setlist" | "event";
   itemName: string;
 }
 
 const deleteLabels = {
   song: "song",
   setlist: "setlist",
+  event: "event",
 } as const;
 
 const lossDetails = {
   song: "Lyrics, notation, and any setlist references will be permanently removed.",
   setlist: "This setlist and its song order will be permanently removed.",
+  event: "This calendar event will be permanently removed.",
 } as const;
 
 export function ConfirmDeleteModal({

@@ -4,26 +4,55 @@ import { eventTypeBadgeStyles, eventTypeLabels } from "@/lib/event-type";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { cn } from "@/lib/cn";
 import type { BandEvent } from "@/types";
-import { Calendar, MapPin } from "lucide-react";
+import { Calendar, MapPin, Pencil, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export interface EventDetailModalProps {
   event: BandEvent | null;
   setlistName?: string;
   onClose: () => void;
+  onEdit: (event: BandEvent) => void;
+  onDelete: (event: BandEvent) => void;
 }
 
 export function EventDetailModal({
   event,
   setlistName,
   onClose,
+  onEdit,
+  onDelete,
 }: EventDetailModalProps) {
   return (
     <ModalDialog
       open={event !== null}
       onClose={onClose}
       title={event?.title ?? ""}
-      footer={<Button variant="secondary" onClick={onClose}>Close</Button>}
+      footer={
+        event ? (
+          <div className="flex w-full flex-wrap items-center justify-between gap-2">
+            <Button
+              variant="danger"
+              onClick={() => onDelete(event)}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="secondary" onClick={onClose}>
+                Close
+              </Button>
+              <Button onClick={() => onEdit(event)}>
+                <Pencil className="h-4 w-4" />
+                Edit
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <Button variant="secondary" onClick={onClose}>
+            Close
+          </Button>
+        )
+      }
     >
       {event && (
         <div className="space-y-4">
