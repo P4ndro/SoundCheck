@@ -339,7 +339,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
   const addSong = useCallback(
     (
       data: Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">,
-    ): Song => {
+    ): Song | Promise<Song> => {
       if (!isSignedIn) {
         return runWorkspaceMutation(patchWorkspace, (prev) => {
           const now = new Date().toISOString();
@@ -374,7 +374,7 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (!bandId) return optimistic;
 
-      void createSongRequest(bandId, data, getToken)
+      return createSongRequest(bandId, data, getToken)
         .then(({ song }) => {
           patchWorkspace((prev) => ({
             ...prev,
@@ -382,15 +382,15 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
               item.id === optimisticId ? song : item,
             ),
           }));
+          return song;
         })
-        .catch(() => {
+        .catch((error) => {
           patchWorkspace((prev) => ({
             ...prev,
             songs: prev.songs.filter((item) => item.id !== optimisticId),
           }));
+          throw error;
         });
-
-      return optimistic;
     },
     [bandId, getToken, isSignedIn, patchWorkspace, workspaceBandId],
   );

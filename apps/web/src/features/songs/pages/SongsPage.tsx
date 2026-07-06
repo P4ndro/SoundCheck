@@ -177,10 +177,24 @@ export function SongsPage() {
         onClose={() => setAddOpen(false)}
         mode="add"
         onSubmit={(values) => {
-          const song = addSong(formValuesToSongPayload(values));
-          setAddOpen(false);
-          toast(`"${song.title}" added to library`);
-          navigate(`/songs/${song.id}`);
+          void (async () => {
+            try {
+              const payload = formValuesToSongPayload(values);
+              const result = addSong(payload);
+              const song =
+                result instanceof Promise ? await result : result;
+              setAddOpen(false);
+              toast(`"${song.title}" added to library`);
+              navigate(`/songs/${song.id}`);
+            } catch (error) {
+              toast(
+                error instanceof Error
+                  ? error.message
+                  : "Could not add song — try again",
+                "info",
+              );
+            }
+          })();
         }}
       />
 

@@ -20,7 +20,9 @@ export interface BandWorkspaceContextValue extends BandWorkspace {
   deleteSong: (songId: string) => void;
   removeSongFromSetlist: (setlistId: string, songId: string) => void;
   addSongToSetlist: (setlistId: string, songId: string) => void;
-  addSong: (song: Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">) => Song;
+  addSong: (
+    song: Omit<Song, "id" | "bandId" | "createdAt" | "updatedAt">,
+  ) => Song | Promise<Song>;
   updateSong: (
     songId: string,
     patch: Partial<

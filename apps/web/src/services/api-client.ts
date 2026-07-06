@@ -172,7 +172,8 @@ export function fetchMe(getToken: TokenGetter): Promise<MeResponse> {
   return apiFetch<MeResponse>("/api/me", {
     method: "GET",
     getToken,
-    retries: 1,
+    retries: 3,
+    timeoutMs: 45_000,
   });
 }
 
@@ -229,7 +230,8 @@ export function fetchWorkspace(
   return apiFetch<BandWorkspace>(`/api/bands/${bandId}/workspace`, {
     method: "GET",
     getToken,
-    retries: 1,
+    retries: 2,
+    timeoutMs: 45_000,
   });
 }
 
@@ -242,6 +244,8 @@ export function createSongRequest(
     method: "POST",
     getToken,
     body: data,
+    retries: 2,
+    timeoutMs: 45_000,
   });
 }
 

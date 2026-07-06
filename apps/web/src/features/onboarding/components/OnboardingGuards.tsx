@@ -1,4 +1,5 @@
 import { AuthLoadingScreen } from "@/features/auth/components/AuthLoadingScreen";
+import { SessionLoadError } from "@/features/auth/components/SessionLoadError";
 import { useSession } from "@/hooks/useSession";
 import type { OnboardingStep } from "@/types";
 import type { ReactNode } from "react";
@@ -25,15 +26,23 @@ function redirectForStep(step: OnboardingStep, code: string | null): string {
 }
 
 export function OnboardingRedirectPage() {
-  const { session, isLoading } = useSession();
+  const { session, isLoading, error, refreshSession } = useSession();
   const [searchParams] = useSearchParams();
   const code = searchParams.get("code");
 
   if (isLoading) {
-    return <AuthLoadingScreen />;
+    return (
+      <AuthLoadingScreen message="Connecting to API… first load on free hosting may take up to a minute." />
+    );
   }
 
   if (!session) {
+    if (error) {
+      return (
+        <SessionLoadError error={error} onRetry={() => void refreshSession()} />
+      );
+    }
+
     return <Navigate to="/login" replace />;
   }
 
@@ -46,13 +55,19 @@ export function OnboardingRedirectPage() {
 }
 
 export function ProfileOnboardingGuard({ children }: { children: ReactNode }) {
-  const { session, isLoading } = useSession();
+  const { session, isLoading, error, refreshSession } = useSession();
 
   if (isLoading) {
-    return <AuthLoadingScreen />;
+    return <AuthLoadingScreen message="Loading your profile…" />;
   }
 
   if (!session) {
+    if (error) {
+      return (
+        <SessionLoadError error={error} onRetry={() => void refreshSession()} />
+      );
+    }
+
     return <Navigate to="/login" replace />;
   }
 
@@ -70,13 +85,19 @@ export function ProfileOnboardingGuard({ children }: { children: ReactNode }) {
 }
 
 export function BandOnboardingGuard({ children }: { children: ReactNode }) {
-  const { session, isLoading } = useSession();
+  const { session, isLoading, error, refreshSession } = useSession();
 
   if (isLoading) {
-    return <AuthLoadingScreen />;
+    return <AuthLoadingScreen message="Loading your profile…" />;
   }
 
   if (!session) {
+    if (error) {
+      return (
+        <SessionLoadError error={error} onRetry={() => void refreshSession()} />
+      );
+    }
+
     return <Navigate to="/login" replace />;
   }
 

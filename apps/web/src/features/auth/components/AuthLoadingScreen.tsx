@@ -1,6 +1,12 @@
 import { cn } from "@/lib/cn";
 
-export function AuthLoadingScreen({ className }: { className?: string }) {
+export function AuthLoadingScreen({
+  className,
+  message = "Loading workspace…",
+}: {
+  className?: string;
+  message?: string;
+}) {
   return (
     <div
       className={cn(
@@ -9,7 +15,7 @@ export function AuthLoadingScreen({ className }: { className?: string }) {
       )}
     >
       <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-accent" />
-      <p className="text-sm text-muted">Loading workspace…</p>
+      <p className="text-sm text-muted">{message}</p>
     </div>
   );
 }

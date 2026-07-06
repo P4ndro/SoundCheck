@@ -39,7 +39,6 @@ export function createApp(options: CreateAppOptions = {}) {
       clerkMiddleware({
         publishableKey: env.CLERK_PUBLISHABLE_KEY,
         secretKey: env.CLERK_SECRET_KEY,
-        authorizedParties: [env.CORS_ORIGIN],
       }),
     );
   }
