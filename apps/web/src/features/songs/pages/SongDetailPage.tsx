@@ -1,3 +1,4 @@
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { ContentPanel } from "@/components/shared/ContentPanel";
 import { DetailBackLink } from "@/components/shared/DetailBackLink";
 import { NotFoundPage } from "@/components/shared/NotFoundPage";
@@ -11,15 +12,17 @@ import { useBandWorkspace } from "@/hooks/useBandWorkspace";
 import { useToast } from "@/providers/ToastProvider";
 import type { Instrument } from "@/types";
 import { useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 export function SongDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getSong, updateSong } = useBandWorkspace();
+  const navigate = useNavigate();
+  const { getSong, updateSong, deleteSong } = useBandWorkspace();
   const { tabs } = useBandTabs(id);
   const { toast } = useToast();
   const song = id ? getSong(id) : undefined;
   const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
 
   const songTabs = tabs.filter((tab) => tab.songId === song?.id);
   const [instrument, setInstrument] = useState<Instrument | undefined>(
@@ -54,13 +57,14 @@ export function SongDetailPage() {
             <SongMetaStrip song={song} />
           </div>
         </div>
-        <Button
-          variant="secondary"
-          className="shrink-0"
-          onClick={() => setEditOpen(true)}
-        >
-          Edit song
-        </Button>
+        <div className="flex shrink-0 flex-wrap gap-2">
+          <Button variant="secondary" onClick={() => setEditOpen(true)}>
+            Edit song
+          </Button>
+          <Button variant="danger" onClick={() => setDeleteOpen(true)}>
+            Delete song
+          </Button>
+        </div>
       </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-2">
@@ -97,6 +101,18 @@ export function SongDetailPage() {
           setEditOpen(false);
           toast("Song updated");
         }}
+      />
+
+      <ConfirmDeleteModal
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          deleteSong(song.id);
+          toast(`"${song.title}" removed`);
+          navigate("/songs");
+        }}
+        itemType="song"
+        itemName={song.title}
       />
     </div>
   );

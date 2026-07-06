@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "@/components/shared/ErrorBoundary";
 import { env } from "@/lib/env";
 import { clerkProviderAppearance } from "@/lib/clerk-appearance";
 import { ActiveBandProvider } from "@/providers/ActiveBandProvider";
@@ -24,7 +25,9 @@ export function App() {
           <ActiveBandProvider>
             <BandWorkspaceProvider>
               <ToastProvider>
-                <RouterProvider router={router} />
+                <ErrorBoundary>
+                  <RouterProvider router={router} />
+                </ErrorBoundary>
               </ToastProvider>
             </BandWorkspaceProvider>
           </ActiveBandProvider>
