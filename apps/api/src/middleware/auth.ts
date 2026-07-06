@@ -89,6 +89,10 @@ export async function resolveDbUser(req: Request): Promise<User> {
     return testUser;
   }
 
+  if (process.env.VITEST === "true") {
+    throw new ApiError(401, "Authentication required");
+  }
+
   const { userId: clerkId } = getAuth(req);
 
   if (!clerkId) {

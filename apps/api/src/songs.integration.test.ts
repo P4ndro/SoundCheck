@@ -74,6 +74,7 @@ describe("API integration: songs", () => {
   it("deletes a song", async ({ skip }) => {
     if (!dbReady) skip();
 
+    const now = new Date();
     const song = await prisma.song.create({
       data: {
         id: `${integrationIds.songId}-delete`,
@@ -82,6 +83,8 @@ describe("API integration: songs", () => {
         bpm: 90,
         durationSeconds: 120,
         status: "not_started",
+        createdAt: now,
+        updatedAt: now,
       },
     });
 
