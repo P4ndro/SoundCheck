@@ -2,7 +2,7 @@
 
 A collaborative workspace for bands — songs, setlists, calendar, notation, and chat in one place.
 
-University final project with a production-style stack: React frontend, Express API, PostgreSQL, and Clerk auth.
+University final project with a production-style stack: React frontend, Express API, PostgreSQL, and Clerk auth. **Staging is live** on Vercel + Render + Neon.
 
 **Repository:** [github.com/P4ndro/SoundCheck](https://github.com/P4ndro/SoundCheck)
 
@@ -14,35 +14,75 @@ University final project with a production-style stack: React frontend, Express 
 - **Tabs** — role-based instrument notation (ASCII tab and chord charts)
 - **Setlists** — ordered song lists for gigs and rehearsals
 - **Calendar** — rehearsals, gigs, and meetings
-- **Chat** — band group chat with photo sharing
+- **Chat** — band group chat with photo sharing (polling; syncs across devices)
 - **Band settings** — members, invite links, multi-band support
 
 ---
 
 ## Stack
 
-React · TypeScript · Vite · Tailwind · TanStack Query · Express · Prisma · PostgreSQL (Neon) · Clerk · Cloudinary
+| Layer | Tech |
+|-------|------|
+| Web | React, TypeScript, Vite, Tailwind, TanStack Query |
+| API | Express, Prisma, Zod |
+| Database | PostgreSQL (Neon) |
+| Auth | Clerk |
+| Media | Cloudinary (chat images) |
 
 Monorepo: `apps/web` (frontend) and `apps/api` (backend).
 
 ---
 
-## Quick start
+## Hosting (staging)
 
-**Requirements:** Node.js 20+
+| Service | Role |
+|---------|------|
+| **Vercel** | Web app (`apps/web`) |
+| **Render** | API (`apps/api`) |
+| **Neon** | Postgres — `staging` branch for staging, `production` for launch |
+| **Clerk** | Auth — **Development** instance for staging (`pk_test_` / `sk_test_`) |
 
-**API** — copy `apps/api/.env.example` to `.env`, set database and Clerk keys, then:
+**Render API build command:**
+
+```bash
+npm ci --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+```
+
+**Start command:** `npm start`
+
+**Vercel:** set root directory to `apps/web`. Env: `VITE_CLERK_PUBLISHABLE_KEY`, `VITE_API_URL` (Render URL, no trailing slash). `vercel.json` rewrites all routes to `index.html` for React Router.
+
+**After deploy:** set Render `CORS_ORIGIN` to your exact Vercel URL; add the same URL to Clerk allowed origins. Wake a sleeping free-tier API via `/api/health` before demos.
+
+Full launch checklist: [docs/PRODUCTION.md](./docs/PRODUCTION.md)
+
+---
+
+## Quick start (local)
+
+**Requirements:** Node.js 20+, Neon database, Clerk app (Development instance is fine)
+
+### API
+
+Copy `apps/api/.env.example` to `apps/api/.env`. Use your **staging** Neon pooled URL for local dev (not production).
 
 ```bash
 cd apps/api
 npm install
-npm run db:migrate
+npx prisma migrate deploy   # or: npm run db:migrate for local schema dev
 npm run dev
 ```
 
-Runs at [http://localhost:3001](http://localhost:3001).
+API: [http://localhost:3001](http://localhost:3001) · Health: [http://localhost:3001/api/health](http://localhost:3001/api/health)
 
-**Web** — copy `apps/web/.env.example` to `.env.local`, set Clerk publishable key and `VITE_API_URL`, then:
+### Web
+
+Copy `apps/web/.env.example` to `apps/web/.env.local`:
+
+```env
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
+VITE_API_URL=http://localhost:3001
+```
 
 ```bash
 cd apps/web
@@ -50,9 +90,21 @@ npm install
 npm run dev
 ```
 
-Runs at [http://localhost:5173](http://localhost:5173).
+Web: [http://localhost:5173](http://localhost:5173)
 
 Sign up, complete onboarding, then create or join a band (`/join?code=...`).
+
+---
+
+## Tests
+
+```bash
+cd apps/api && npm test                    # unit (no DB)
+cd apps/api && npm run test:integration    # needs Postgres + migrate deploy
+cd apps/web && npm test
+```
+
+CI runs on push/PR to `main` and `production-readiness`. Details: [docs/TESTING.md](./docs/TESTING.md)
 
 ---
 
@@ -60,12 +112,20 @@ Sign up, complete onboarding, then create or join a band (`/join?code=...`).
 
 ```
 SoundCheck/
-├── apps/api/     Express API, Prisma, migrations
-├── apps/web/     React app
-└── docs/         Design, architecture, roadmap
+├── apps/
+│   ├── api/          Express API, Prisma, migrations
+│   └── web/          React app (Vite)
+├── docs/             Architecture, production roadmap, testing
+├── render.yaml       Render API service config
+└── vercel.json       SPA rewrites (monorepo fallback)
 ```
 
-Further detail: [Production roadmap](./docs/PRODUCTION.md) · [Testing](./docs/TESTING.md) · [API readme](./apps/api/README.md) · [Design](./docs/DESIGN.md)
+| Doc | Purpose |
+|-----|---------|
+| [PRODUCTION.md](./docs/PRODUCTION.md) | Launch roadmap and env checklist |
+| [TESTING.md](./docs/TESTING.md) | Vitest and CI |
+| [apps/api/README.md](./apps/api/README.md) | API routes and scripts |
+| [DESIGN.md](./docs/DESIGN.md) | Product and UX notes |
 
 ---
 
