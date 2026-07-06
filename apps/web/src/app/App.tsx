@@ -19,6 +19,10 @@ export function App() {
       signUpUrl="/signup"
       signInFallbackRedirectUrl="/onboarding"
       signUpFallbackRedirectUrl="/onboarding"
+      allowedRedirectOrigins={[
+        "http://localhost:5173",
+        typeof window !== "undefined" ? window.location.origin : "",
+      ].filter(Boolean)}
     >
       <QueryProvider>
         <SessionProvider>
