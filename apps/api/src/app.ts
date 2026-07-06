@@ -8,7 +8,11 @@ import cors from "cors";
 import express from "express";
 import helmet from "helmet";
 
-export function createApp() {
+export interface CreateAppOptions {
+  skipClerk?: boolean;
+}
+
+export function createApp(options: CreateAppOptions = {}) {
   const app = express();
 
   app.disable("x-powered-by");
@@ -30,12 +34,14 @@ export function createApp() {
 
   app.use(express.json({ limit: "1mb" }));
 
-  app.use(
-    clerkMiddleware({
-      publishableKey: env.CLERK_PUBLISHABLE_KEY,
-      secretKey: env.CLERK_SECRET_KEY,
-    }),
-  );
+  if (!options.skipClerk) {
+    app.use(
+      clerkMiddleware({
+        publishableKey: env.CLERK_PUBLISHABLE_KEY,
+        secretKey: env.CLERK_SECRET_KEY,
+      }),
+    );
+  }
 
   app.use("/api", apiRouter);
 

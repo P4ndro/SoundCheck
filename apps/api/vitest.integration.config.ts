@@ -4,7 +4,10 @@ export default defineConfig({
   test: {
     environment: "node",
     setupFiles: ["./vitest.setup.ts"],
-    include: ["src/**/*.test.ts"],
-    exclude: ["src/**/*.integration.test.ts"],
+    include: ["src/**/*.integration.test.ts"],
+    fileParallelism: false,
+  },
+  resolve: {
+    extensions: [".ts", ".js"],
   },
 });

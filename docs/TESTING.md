@@ -1,14 +1,19 @@
 # Testing
 
-SoundCheck uses **Vitest** for unit tests. Integration and E2E tests are planned in later phases.
+SoundCheck uses **Vitest** for unit and integration tests. E2E (Playwright) is Phase 3.
 
 ## Commands
 
 ```bash
-# API unit tests
+# API unit tests (no database required)
 cd apps/api
 npm test
 npm run test:watch
+
+# API integration tests (requires Postgres + migrations)
+cd apps/api
+npx prisma migrate deploy
+npm run test:integration
 
 # Web unit tests
 cd apps/web
@@ -16,7 +21,7 @@ npm test
 npm run test:watch
 ```
 
-## What is covered (Phase 1)
+## Phase 1 — Unit tests
 
 ### API (`apps/api`)
 
@@ -36,18 +41,44 @@ npm run test:watch
 | Chat clustering | `src/features/chat/lib/chat-utils.test.ts` |
 | Invite codes | `src/lib/invite-code.test.ts` |
 
+## Phase 2 — API integration tests
+
+Uses **Supertest** against a real Postgres database. Auth is bypassed in Vitest only via the `x-test-user-id` header (`createApp({ skipClerk: true })`).
+
+| Area | File |
+|------|------|
+| Health | `src/health.integration.test.ts` |
+| Auth (401/403) | `src/health.integration.test.ts` |
+| Songs CRUD | `src/songs.integration.test.ts` |
+| Tabs create/409/update | `src/tabs.integration.test.ts` |
+
+Helpers: `src/test/integration-helpers.ts`
+
+Integration tests **skip automatically** when the database is unreachable (local dev without Postgres). CI runs them against a Postgres service container.
+
+### Local Postgres for integration tests
+
+```bash
+# Example with Docker
+docker run --name soundcheck-test-db -e POSTGRES_USER=test -e POSTGRES_PASSWORD=test -e POSTGRES_DB=soundcheck_test -p 5432:5432 -d postgres:16
+
+cd apps/api
+set DATABASE_URL=postgresql://test:test@localhost:5432/soundcheck_test
+npx prisma migrate deploy
+npm run test:integration
+```
+
 ## CI
 
-GitHub Actions runs on every push/PR to `main` and `production-readiness`:
+GitHub Actions on `main` and `production-readiness`:
 
-- API: typecheck → test → build
-- Web: lint → test → build
+- **API:** typecheck → unit tests → migrate → integration tests → build
+- **Web:** lint → unit tests → build
 
 See [`.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
-## Next phases
+## Next
 
-- **Phase 2:** API integration tests (Supertest + test database)
 - **Phase 3:** Playwright E2E on staging
 
 See [PRODUCTION.md](./PRODUCTION.md) for the full roadmap.

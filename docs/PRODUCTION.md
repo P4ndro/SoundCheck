@@ -151,7 +151,7 @@ Track progress from MVP to a secure, fast, reliable production product.
 ### D1 — Tests
 - [x] Vitest setup (api + web unit)
 - [x] Unit tests: permissions, invites, validation, key utils
-- [ ] API integration tests (supertest + test DB)
+- [x] API integration tests (supertest + test DB)
 - [ ] Playwright E2E — sign up + onboarding
 - [ ] E2E — invite join second user
 - [ ] E2E — song CRUD + delete
