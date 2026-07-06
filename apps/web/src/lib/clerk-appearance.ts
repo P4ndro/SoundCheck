@@ -1,5 +1,5 @@
 import { dark } from "@clerk/themes";
-import type { Appearance } from "@clerk/types";
+import type { Appearance } from "@clerk/shared/types";
 
 const soundcheckVariables = {
   colorPrimary: "#a38cf0",

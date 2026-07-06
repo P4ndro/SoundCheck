@@ -43,6 +43,7 @@ On first sign-in, the API upserts a `User` row. If your Clerk email matches a se
 | GET | `/api/health` | No | Health check |
 | GET | `/api/me` | Yes | Current user + band memberships |
 | GET | `/api/bands/:bandId/workspace` | Yes + member | Full workspace payload |
+| PATCH | `/api/bands/:bandId` | Yes + member | Update band (name) |
 | GET | `/api/bands/:bandId/songs` | Yes + member | List songs |
 | GET | `/api/bands/:bandId/songs/:songId` | Yes + member | Get song |
 | POST | `/api/bands/:bandId/songs` | Yes + member | Create song |

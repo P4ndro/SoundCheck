@@ -1,3 +1,4 @@
+import { ConfirmDeleteModal } from "@/components/shared/ConfirmDeleteModal";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { CalendarNav } from "@/features/calendar/components/CalendarNav";
 import { EventDetailModal } from "@/features/calendar/components/EventDetailModal";
@@ -27,7 +28,8 @@ import { Plus } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export function CalendarPage() {
-  const { events, getSetlist, setlists, addEvent } = useBandWorkspace();
+  const { events, getSetlist, setlists, addEvent, updateEvent, deleteEvent } =
+    useBandWorkspace();
   const { toast } = useToast();
   const today = new Date();
   const [viewDate, setViewDate] = useState(
@@ -35,6 +37,8 @@ export function CalendarPage() {
   );
   const [selectedEvent, setSelectedEvent] = useState<BandEvent | null>(null);
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<BandEvent | null>(null);
+  const [eventToDelete, setEventToDelete] = useState<BandEvent | null>(null);
 
   useActionSearchParam("schedule", setScheduleOpen);
 
@@ -223,14 +227,44 @@ export function CalendarPage() {
         event={selectedEvent}
         setlistName={selectedSetlistName}
         onClose={() => setSelectedEvent(null)}
+        onEdit={(event) => {
+          setSelectedEvent(null);
+          setEditingEvent(event);
+          setScheduleOpen(true);
+        }}
+        onDelete={(event) => {
+          setSelectedEvent(null);
+          setEventToDelete(event);
+        }}
       />
 
       <ScheduleEventModal
         open={scheduleOpen}
-        onClose={() => setScheduleOpen(false)}
-        setlists={setlists}
-        onSubmit={(data) => {
+        onClose={() => {
           setScheduleOpen(false);
+          setEditingEvent(null);
+        }}
+        setlists={setlists}
+        event={editingEvent}
+        onSubmit={(data, eventId) => {
+          setScheduleOpen(false);
+          setEditingEvent(null);
+
+          if (eventId) {
+            void Promise.resolve(updateEvent(eventId, data))
+              .then(() => {
+                toast(`"${data.title}" updated`);
+                const eventMonth = new Date(data.start);
+                setViewDate(
+                  new Date(eventMonth.getFullYear(), eventMonth.getMonth(), 1),
+                );
+              })
+              .catch(() => {
+                toast("Could not update event");
+              });
+            return;
+          }
+
           void Promise.resolve(addEvent(data))
             .then((event) => {
               toast(`"${event.title}" scheduled`);
@@ -243,6 +277,16 @@ export function CalendarPage() {
               toast("Could not schedule event");
             });
         }}
+      />
+
+      <ConfirmDeleteModal
+        open={eventToDelete !== null}
+        onClose={() => setEventToDelete(null)}
+        onConfirm={() => {
+          if (eventToDelete) deleteEvent(eventToDelete.id);
+        }}
+        itemType="event"
+        itemName={eventToDelete?.title ?? ""}
       />
     </div>
   );

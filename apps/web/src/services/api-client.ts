@@ -407,6 +407,21 @@ export function deleteEventRequest(
   });
 }
 
+export function updateBandRequest(
+  bandId: string,
+  data: { name: string },
+  getToken: TokenGetter,
+): Promise<{ band: BandWorkspace["band"] }> {
+  return apiFetch<{ band: BandWorkspace["band"] }>(
+    `/api/bands/${bandId}`,
+    {
+      method: "PATCH",
+      getToken,
+      body: data,
+    },
+  );
+}
+
 export function fetchMemberProfile(
   bandId: string,
   userId: string,
@@ -507,6 +522,16 @@ export interface SaveTabInput {
   chordChart: string;
   capo?: number | null;
   trackName?: string;
+}
+
+export function fetchBandTabs(
+  bandId: string,
+  getToken: TokenGetter,
+): Promise<{ tabs: InstrumentTab[] }> {
+  return apiFetch<{ tabs: InstrumentTab[] }>(`/api/bands/${bandId}/tabs`, {
+    method: "GET",
+    getToken,
+  });
 }
 
 export function fetchSongTabs(

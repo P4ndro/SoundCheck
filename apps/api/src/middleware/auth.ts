@@ -61,7 +61,38 @@ async function syncUserFromClerk(clerkId: string): Promise<User> {
   });
 }
 
+async function resolveTestUser(req: Request): Promise<User | null> {
+  if (process.env.VITEST !== "true") {
+    return null;
+  }
+
+  const testUserId = req.header("x-test-user-id");
+  if (!testUserId) {
+    return null;
+  }
+
+  const user = await prisma.user.findUnique({ where: { id: testUserId } });
+  if (!user) {
+    throw new ApiError(401, "Authentication required");
+  }
+
+  if (user.deletedAt) {
+    throw new ApiError(401, "Account is no longer active");
+  }
+
+  return user;
+}
+
 export async function resolveDbUser(req: Request): Promise<User> {
+  const testUser = await resolveTestUser(req);
+  if (testUser) {
+    return testUser;
+  }
+
+  if (process.env.VITEST === "true") {
+    throw new ApiError(401, "Authentication required");
+  }
+
   const { userId: clerkId } = getAuth(req);
 
   if (!clerkId) {

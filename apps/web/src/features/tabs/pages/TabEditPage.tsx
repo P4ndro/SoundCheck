@@ -146,9 +146,11 @@ export function TabEditPage() {
       }
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: queryKeys.workspace(bandId) }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.tabs(bandId, songId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.tabs(bandId),
         }),
       ]);
 

@@ -11,7 +11,7 @@ import {
   eventTypePickerStyles,
 } from "@/lib/event-type";
 import { cn } from "@/lib/cn";
-import type { EventType, Setlist } from "@/types";
+import type { BandEvent, EventType, Setlist } from "@/types";
 import { CalendarDays, MapPin } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -29,17 +29,29 @@ export interface ScheduleEventModalProps {
   open: boolean;
   onClose: () => void;
   setlists: Setlist[];
-  onSubmit: (event: ScheduleEventPayload) => void;
+  event?: BandEvent | null;
+  onSubmit: (event: ScheduleEventPayload, eventId?: string) => void;
 }
 
 function toIsoDateTime(date: string, time: string): string {
   return new Date(`${date}T${time}`).toISOString();
 }
 
+function fromIsoDateTime(iso: string): { date: string; time: string } {
+  const value = new Date(iso);
+  const pad = (part: number) => String(part).padStart(2, "0");
+
+  return {
+    date: `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}`,
+    time: `${pad(value.getHours())}:${pad(value.getMinutes())}`,
+  };
+}
+
 export function ScheduleEventModal({
   open,
   onClose,
   setlists,
+  event,
   onSubmit,
 }: ScheduleEventModalProps) {
   const [title, setTitle] = useState("");
@@ -55,6 +67,23 @@ export function ScheduleEventModal({
 
   useEffect(() => {
     if (!open) return;
+
+    if (event) {
+      const start = fromIsoDateTime(event.start);
+      const end = fromIsoDateTime(event.end);
+      setTitle(event.title);
+      setType(event.type);
+      setDate(start.date);
+      setStartTime(start.time);
+      setEndTime(end.time);
+      setLocation(event.location);
+      setNotes(event.notes);
+      setSetlistId(event.setlistId ?? "");
+      setTitleError("");
+      setDateError("");
+      return;
+    }
+
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     setTitle("");
@@ -67,7 +96,7 @@ export function ScheduleEventModal({
     setSetlistId("");
     setTitleError("");
     setDateError("");
-  }, [open]);
+  }, [open, event]);
 
   const handleSubmit = () => {
     let valid = true;
@@ -89,29 +118,40 @@ export function ScheduleEventModal({
       return;
     }
 
-    onSubmit({
-      title: title.trim(),
-      type,
-      start,
-      end,
-      location: location.trim(),
-      notes: notes.trim(),
-      setlistId: setlistId || undefined,
-    });
+    onSubmit(
+      {
+        title: title.trim(),
+        type,
+        start,
+        end,
+        location: location.trim(),
+        notes: notes.trim(),
+        setlistId: setlistId || undefined,
+      },
+      event?.id,
+    );
   };
+
+  const isEditing = Boolean(event);
 
   return (
     <ModalDialog
       open={open}
       onClose={onClose}
-      title="Schedule event"
-      description="Rehearsal, gig, or meeting — set the when and where."
+      title={isEditing ? "Edit event" : "Schedule event"}
+      description={
+        isEditing
+          ? "Update the details for this calendar event."
+          : "Rehearsal, gig, or meeting — set the when and where."
+      }
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit}>Schedule event</Button>
+          <Button onClick={handleSubmit}>
+            {isEditing ? "Save changes" : "Schedule event"}
+          </Button>
         </>
       }
     >

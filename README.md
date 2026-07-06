@@ -65,7 +65,7 @@ SoundCheck/
 └── docs/         Design, architecture, roadmap
 ```
 
-Further detail: [API readme](./apps/api/README.md) · [Design](./docs/DESIGN.md) · [Architecture](./docs/ARCHITECTURE.md) · [Roadmap](./docs/ROADMAP.md)
+Further detail: [Production roadmap](./docs/PRODUCTION.md) · [Testing](./docs/TESTING.md) · [API readme](./apps/api/README.md) · [Design](./docs/DESIGN.md)
 
 ---
 

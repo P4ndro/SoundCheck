@@ -1,11 +1,15 @@
 import { asyncHandler } from "../../lib/async-handler.js";
-import { loadWorkspacePayload } from "../../lib/serializers.js";
-import { paramString } from "../../lib/request-params.js";
+import { loadWorkspacePayload, serializeBand } from "../../lib/serializers.js";
+import { prisma } from "../../lib/prisma.js";
+import { paramString, bandIdFromRequest } from "../../lib/request-params.js";
 import { ApiError } from "../../middleware/error-handler.js";
 import { requireAuth } from "../../middleware/auth.js";
 import { requireBandMember } from "../../middleware/band-member.js";
 import { validate } from "../../middleware/validate.js";
 import { bandIdParamsSchema } from "../../schemas/song.js";
+import { updateBandSchema } from "../../schemas/band.js";
+import type { UpdateBandInput } from "../../schemas/band.js";
+import { bandTabsRouter } from "./band-tabs.js";
 import { bandOnboardingRouter } from "./onboarding.js";
 import { chatRouter } from "./chat.js";
 import { eventsRouter } from "./events.js";
@@ -26,6 +30,22 @@ const bandScopedRouter = Router({ mergeParams: true });
 bandScopedRouter.use(validate(bandIdParamsSchema, "params"));
 bandScopedRouter.use(requireBandMember());
 
+bandScopedRouter.patch(
+  "/",
+  validate(updateBandSchema),
+  asyncHandler(async (req, res) => {
+    const bandId = bandIdFromRequest(req);
+    const { name } = req.body as UpdateBandInput;
+
+    const band = await prisma.band.update({
+      where: { id: bandId },
+      data: { name },
+    });
+
+    res.json({ band: serializeBand(band) });
+  }),
+);
+
 bandScopedRouter.get(
   "/workspace",
   asyncHandler(async (req, res) => {
@@ -42,6 +62,7 @@ bandScopedRouter.get(
   }),
 );
 
+bandScopedRouter.use("/tabs", bandTabsRouter);
 bandScopedRouter.use("/songs", songsRouter);
 bandScopedRouter.use("/setlists", setlistsRouter);
 bandScopedRouter.use("/events", eventsRouter);

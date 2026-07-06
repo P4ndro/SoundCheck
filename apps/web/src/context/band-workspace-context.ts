@@ -13,7 +13,7 @@ export interface BandWorkspaceContextValue extends BandWorkspace {
   getSong: (id: string) => Song | undefined;
   getSetlist: (id: string) => Setlist | undefined;
   getEvent: (id: string) => BandEvent | undefined;
-  updateBandName: (name: string) => void;
+  updateBandName: (name: string) => void | Promise<void>;
   reorderSetlistSongs: (setlistId: string, fromIndex: number, toIndex: number) => void;
   duplicateSetlist: (setlistId: string) => void;
   deleteSetlist: (setlistId: string) => void;
@@ -31,6 +31,11 @@ export interface BandWorkspaceContextValue extends BandWorkspace {
     data: Omit<Setlist, "id" | "bandId" | "songIds" | "createdAt" | "updatedAt">,
   ) => Setlist | Promise<Setlist>;
   addEvent: (event: Omit<BandEvent, "id" | "bandId">) => BandEvent | Promise<BandEvent>;
+  updateEvent: (
+    eventId: string,
+    patch: Partial<Omit<BandEvent, "id" | "bandId">>,
+  ) => Promise<void>;
+  deleteEvent: (eventId: string) => void;
 }
 
 export const BandWorkspaceContext =
