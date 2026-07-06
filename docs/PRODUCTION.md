@@ -149,7 +149,8 @@ Track progress from MVP to a secure, fast, reliable production product.
 ## Stream D — Quality, testing & operations
 
 ### D1 — Tests
-- [ ] Vitest setup (api + web unit)
+- [x] Vitest setup (api + web unit)
+- [x] Unit tests: permissions, invites, validation, key utils
 - [ ] API integration tests (supertest + test DB)
 - [ ] Playwright E2E — sign up + onboarding
 - [ ] E2E — invite join second user
@@ -159,7 +160,7 @@ Track progress from MVP to a secure, fast, reliable production product.
 - [ ] E2E — tab create/edit (role-locked)
 
 ### D2 — CI/CD
-- [ ] GitHub Actions: lint, typecheck, test, build on PR
+- [x] GitHub Actions: lint, typecheck, test, build on PR
 - [ ] Deploy staging on merge to `develop`
 - [ ] Deploy production on tagged release
 - [ ] `prisma migrate deploy` in deploy pipeline (never `migrate dev` in prod)
