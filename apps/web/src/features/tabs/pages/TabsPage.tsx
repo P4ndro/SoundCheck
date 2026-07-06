@@ -8,6 +8,7 @@ import { tabCapoForDisplay } from "@/lib/tab-display";
 import { roleLabels, roleToInstrument } from "@/lib/roles";
 import { songStatusStyles } from "@/lib/song-status";
 import { cn } from "@/lib/cn";
+import { useBandTabs } from "@/hooks/useBandTabs";
 import {
   useBandWorkspace,
   useCurrentMemberRole,
@@ -39,7 +40,8 @@ const instrumentIcons: Partial<Record<Instrument, LucideIcon>> = {
 export function TabsPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { songs, tabs } = useBandWorkspace();
+  const { songs } = useBandWorkspace();
+  const { tabs } = useBandTabs();
   const memberRole = useCurrentMemberRole();
   const defaultInstrument = roleToInstrument(memberRole ?? "bass") ?? "bass";
   const ownInstrument = roleToInstrument(memberRole ?? "custom");

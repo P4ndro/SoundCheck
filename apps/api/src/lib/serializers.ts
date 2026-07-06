@@ -208,7 +208,6 @@ export type WorkspacePayload = {
     | ReturnType<typeof serializePublicUser>
   )[];
   songs: ReturnType<typeof serializeSong>[];
-  tabs: ReturnType<typeof serializeTab>[];
   setlists: ReturnType<typeof serializeSetlist>[];
   events: ReturnType<typeof serializeEvent>[];
 };
@@ -226,7 +225,6 @@ export async function loadWorkspacePayload(
           orderBy: { joinedAt: "asc" },
         },
         songs: { orderBy: { updatedAt: "desc" } },
-        tabs: true,
         setlists: {
           include: {
             items: { orderBy: { position: "asc" } },
@@ -261,7 +259,6 @@ export async function loadWorkspacePayload(
         : serializePublicUser(user),
     ),
     songs: band.songs.map(serializeSong),
-    tabs: band.tabs.map(serializeTab),
     setlists: band.setlists.map((setlist) =>
       serializeSetlist(
         setlist,

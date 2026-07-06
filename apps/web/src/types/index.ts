@@ -135,7 +135,6 @@ export interface BandWorkspace {
   members: BandMember[];
   users: User[];
   songs: Song[];
-  tabs: InstrumentTab[];
   setlists: Setlist[];
   events: BandEvent[];
 }

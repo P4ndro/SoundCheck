@@ -77,4 +77,22 @@ describe("API integration: tabs", () => {
     expect(response.status).toBe(200);
     expect(response.body.tab.asciiTab).toBe("G|-----|");
   });
+
+  it("lists all band tabs", async ({ skip }) => {
+    if (!dbReady) skip();
+
+    const response = await createIntegrationAgent(integrationIds.memberUserId).get(
+      `/api/bands/${integrationIds.bandId}/tabs`,
+    );
+
+    expect(response.status).toBe(200);
+    expect(response.body.tabs).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          songId: integrationIds.songId,
+          instrument: "bass",
+        }),
+      ]),
+    );
+  });
 });

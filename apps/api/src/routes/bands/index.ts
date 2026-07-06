@@ -9,6 +9,7 @@ import { validate } from "../../middleware/validate.js";
 import { bandIdParamsSchema } from "../../schemas/song.js";
 import { updateBandSchema } from "../../schemas/band.js";
 import type { UpdateBandInput } from "../../schemas/band.js";
+import { bandTabsRouter } from "./band-tabs.js";
 import { bandOnboardingRouter } from "./onboarding.js";
 import { chatRouter } from "./chat.js";
 import { eventsRouter } from "./events.js";
@@ -61,6 +62,7 @@ bandScopedRouter.get(
   }),
 );
 
+bandScopedRouter.use("/tabs", bandTabsRouter);
 bandScopedRouter.use("/songs", songsRouter);
 bandScopedRouter.use("/setlists", setlistsRouter);
 bandScopedRouter.use("/events", eventsRouter);

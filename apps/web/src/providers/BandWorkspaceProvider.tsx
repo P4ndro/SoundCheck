@@ -257,7 +257,6 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
       patchWorkspace((prev) => ({
         ...prev,
         songs: prev.songs.filter((s) => s.id !== songId),
-        tabs: prev.tabs.filter((tab) => tab.songId !== songId),
         setlists: prev.setlists.map((setlist) => ({
           ...setlist,
           songIds: setlist.songIds.filter((id) => id !== songId),
@@ -266,11 +265,20 @@ export function BandWorkspaceProvider({ children }: { children: ReactNode }) {
 
       if (!isSignedIn || !bandId) return;
 
-      void deleteSongRequest(bandId, songId, getToken).catch(() => {
-        void reloadWorkspace();
-      });
+      void deleteSongRequest(bandId, songId, getToken)
+        .then(() => {
+          void queryClient.removeQueries({
+            queryKey: queryKeys.tabs(bandId, songId),
+          });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.tabs(bandId),
+          });
+        })
+        .catch(() => {
+          void reloadWorkspace();
+        });
     },
-    [bandId, getToken, isSignedIn, patchWorkspace, reloadWorkspace],
+    [bandId, getToken, isSignedIn, patchWorkspace, queryClient, reloadWorkspace],
   );
 
   const removeSongFromSetlist = useCallback(

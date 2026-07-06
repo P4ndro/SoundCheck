@@ -524,6 +524,16 @@ export interface SaveTabInput {
   trackName?: string;
 }
 
+export function fetchBandTabs(
+  bandId: string,
+  getToken: TokenGetter,
+): Promise<{ tabs: InstrumentTab[] }> {
+  return apiFetch<{ tabs: InstrumentTab[] }>(`/api/bands/${bandId}/tabs`, {
+    method: "GET",
+    getToken,
+  });
+}
+
 export function fetchSongTabs(
   bandId: string,
   songId: string,

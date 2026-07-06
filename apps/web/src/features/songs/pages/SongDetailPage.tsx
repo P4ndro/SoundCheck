@@ -6,6 +6,7 @@ import { TabContentViewer } from "@/features/songs/components/TabContentViewer";
 import { Button } from "@/components/ui/Button";
 import { SongFormModal } from "@/features/songs/components/SongFormModal";
 import { formValuesToSongPayload } from "@/lib/song-form";
+import { useBandTabs } from "@/hooks/useBandTabs";
 import { useBandWorkspace } from "@/hooks/useBandWorkspace";
 import { useToast } from "@/providers/ToastProvider";
 import type { Instrument } from "@/types";
@@ -14,7 +15,8 @@ import { useParams } from "react-router-dom";
 
 export function SongDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { getSong, tabs, updateSong } = useBandWorkspace();
+  const { getSong, updateSong } = useBandWorkspace();
+  const { tabs } = useBandTabs(id);
   const { toast } = useToast();
   const song = id ? getSong(id) : undefined;
   const [editOpen, setEditOpen] = useState(false);

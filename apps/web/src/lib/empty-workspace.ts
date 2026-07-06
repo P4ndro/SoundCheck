@@ -13,7 +13,6 @@ export const emptyWorkspace: BandWorkspace = {
   members: [],
   users: [],
   songs: [],
-  tabs: [],
   setlists: [],
   events: [],
 };
